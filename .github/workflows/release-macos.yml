@@ -1,0 +1,53 @@
+name: Release macOS App
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Derive release metadata
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "ZIP_NAME=MyNotes-macOS-$version.zip" >> "$GITHUB_ENV"
+
+      - name: Build macOS app
+        run: |
+          xcodebuild \
+            -project MyNotes.xcodeproj \
+            -scheme "MyNotes macOS" \
+            -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package app
+        run: |
+          app_path="build/Build/Products/Release/MyNotes.app"
+          test -d "$app_path"
+          ditto -c -k --sequesterRsrc --keepParent "$app_path" "$ZIP_NAME"
+          shasum -a 256 "$ZIP_NAME" > "$ZIP_NAME.sha256"
+
+      - name: Publish GitHub release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "$ZIP_NAME" "$ZIP_NAME.sha256" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "$ZIP_NAME" "$ZIP_NAME.sha256" \
+              --title "MyNotes $VERSION" \
+              --notes "macOS release for MyNotes $VERSION."
+          fi

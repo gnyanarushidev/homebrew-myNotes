@@ -12,4 +12,4 @@ xcodebuild \
   CODE_SIGNING_ALLOWED=NO \
   build
 
-open "$build_root/Build/Products/Debug/MyNotes macOS.app"
+open "$build_root/Build/Products/Debug/MyNotes.app"

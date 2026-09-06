@@ -33,6 +33,33 @@ On Mac, a movable floating toolbar provides ink colors, stroke widths, highlight
 
 The project uses Apple frameworks only. There are no third-party packages to install, required environment variables, API keys, or external services to configure.
 
+## Install on Mac with Homebrew
+
+The repository includes a Homebrew cask for the macOS app. Once a matching GitHub release exists and the cask has been published to the tap repository, install it with:
+
+```sh
+brew tap gnyanarushi/mynotes https://github.com/gnyanarushi/homebrew-myNotes
+brew install --cask mynotes
+```
+
+If Homebrew reports a tap remote mismatch, remove the existing tap and add it again with the URL above:
+
+```sh
+brew untap gnyanarushi/mynotes
+brew tap gnyanarushi/mynotes https://github.com/gnyanarushi/homebrew-myNotes
+```
+
+The cask downloads `MyNotes-macOS-<version>.zip` from GitHub Releases and installs `MyNotes.app`. The first published release should match the cask version in `Casks/mynotes.rb`, currently `1.0`.
+
+Release tags named `v<version>` automatically build and publish the macOS zip asset:
+
+```sh
+git tag v1.0
+git push origin v1.0
+```
+
+The release workflow currently builds an unsigned app. Add Developer ID signing and notarization before using it as a polished public distribution channel.
+
 ## Getting Started
 
 Run the following commands from the repository root.
@@ -45,7 +72,7 @@ The included script builds an unsigned Debug version and launches it:
 zsh run-macos.sh
 ```
 
-The built app is located at `build/Build/Products/Debug/MyNotes macOS.app`.
+The built app is located at `build/Build/Products/Debug/MyNotes.app`.
 
 To build without launching:
 
