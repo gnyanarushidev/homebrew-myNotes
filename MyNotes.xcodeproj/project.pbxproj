@@ -1,0 +1,680 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		AC0000000000000000000001 /* MyNotesApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000001 /* MyNotesApp.swift */; };
+		AC0000000000000000000002 /* NotebookModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000002 /* NotebookModel.swift */; };
+		AC0000000000000000000003 /* PageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000003 /* PageModel.swift */; };
+		AC0000000000000000000004 /* DataController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000004 /* DataController.swift */; };
+		AC0000000000000000000005 /* FileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000005 /* FileStore.swift */; };
+		AC0000000000000000000006 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000006 /* LibraryView.swift */; };
+		AC0000000000000000000007 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000007 /* Assets.xcassets */; };
+		AC0000000000000000000008 /* NotebookView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000000000000000000000A /* NotebookView.swift */; };
+		AC0000000000000000000009 /* EditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000000000000000000000B /* EditorView.swift */; };
+		AC000000000000000000000A /* PencilCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000000000000000000000C /* PencilCanvasView.swift */; };
+		AC000000000000000000000B /* DrawingStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000000000000000000000D /* DrawingStorage.swift */; };
+		AC000000000000000000000C /* ViewportModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000000000000000000000E /* ViewportModel.swift */; };
+		AC000000000000000000000D /* EditorCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000000000000000000000F /* EditorCamera.swift */; };
+		AC000000000000000000000E /* NotebookLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000010 /* NotebookLayout.swift */; };
+		AC000000000000000000000F /* MacNotebookCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000011 /* MacNotebookCanvasView.swift */; };
+		AC0000000000000000000011 /* MyNotesApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000001 /* MyNotesApp.swift */; };
+		AC0000000000000000000012 /* NotebookModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000002 /* NotebookModel.swift */; };
+		AC0000000000000000000013 /* PageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000003 /* PageModel.swift */; };
+		AC0000000000000000000014 /* DataController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000004 /* DataController.swift */; };
+		AC0000000000000000000015 /* FileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000005 /* FileStore.swift */; };
+		AC0000000000000000000016 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000006 /* LibraryView.swift */; };
+		AC0000000000000000000017 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000007 /* Assets.xcassets */; };
+		AC0000000000000000000018 /* NotebookView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000000000000000000000A /* NotebookView.swift */; };
+		AC0000000000000000000019 /* EditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000000000000000000000B /* EditorView.swift */; };
+		AC000000000000000000001A /* PencilCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000000000000000000000C /* PencilCanvasView.swift */; };
+		AC000000000000000000001B /* DrawingStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000000000000000000000D /* DrawingStorage.swift */; };
+		AC000000000000000000001C /* ViewportModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000000000000000000000E /* ViewportModel.swift */; };
+		AC000000000000000000001D /* EditorCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000000000000000000000F /* EditorCamera.swift */; };
+		AC000000000000000000001E /* NotebookLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000010 /* NotebookLayout.swift */; };
+		AC000000000000000000001F /* MacNotebookCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000011 /* MacNotebookCanvasView.swift */; };
+		AC0000000000000000000021 /* CursorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000021 /* CursorModel.swift */; };
+		AC0000000000000000000022 /* NativeCursorFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000022 /* NativeCursorFactory.swift */; };
+		AC0000000000000000000023 /* CursorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000021 /* CursorModel.swift */; };
+		AC0000000000000000000024 /* NativeCursorFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000022 /* NativeCursorFactory.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AB0000000000000000000001 /* MyNotesApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyNotesApp.swift; sourceTree = "<group>"; };
+		AB0000000000000000000002 /* NotebookModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotebookModel.swift; sourceTree = "<group>"; };
+		AB0000000000000000000003 /* PageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageModel.swift; sourceTree = "<group>"; };
+		AB0000000000000000000004 /* DataController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataController.swift; sourceTree = "<group>"; };
+		AB0000000000000000000005 /* FileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileStore.swift; sourceTree = "<group>"; };
+		AB0000000000000000000006 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		AB0000000000000000000007 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AB0000000000000000000008 /* MyNotes.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyNotes.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB0000000000000000000009 /* MyNotes macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "MyNotes macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB000000000000000000000A /* NotebookView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotebookView.swift; sourceTree = "<group>"; };
+		AB000000000000000000000B /* EditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorView.swift; sourceTree = "<group>"; };
+		AB000000000000000000000C /* PencilCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PencilCanvasView.swift; sourceTree = "<group>"; };
+		AB000000000000000000000D /* DrawingStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingStorage.swift; sourceTree = "<group>"; };
+		AB000000000000000000000E /* ViewportModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewportModel.swift; sourceTree = "<group>"; };
+		AB000000000000000000000F /* EditorCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorCamera.swift; sourceTree = "<group>"; };
+		AB0000000000000000000010 /* NotebookLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotebookLayout.swift; sourceTree = "<group>"; };
+		AB0000000000000000000011 /* MacNotebookCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacNotebookCanvasView.swift; sourceTree = "<group>"; };
+		AB0000000000000000000021 /* CursorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorModel.swift; sourceTree = "<group>"; };
+		AB0000000000000000000022 /* NativeCursorFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCursorFactory.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AF0000000000000000000003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AF0000000000000000000006 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		AD0000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				AD0000000000000000000002 /* App */,
+				AD0000000000000000000003 /* Core */,
+				AD0000000000000000000008 /* Features */,
+				AD0000000000000000000015 /* Drawing */,
+				AD0000000000000000000019 /* Resources */,
+				AD0000000000000000000020 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AD0000000000000000000002 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				AB0000000000000000000001 /* MyNotesApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		AD0000000000000000000003 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				AD0000000000000000000004 /* Models */,
+				AD0000000000000000000005 /* Persistence */,
+				AD0000000000000000000006 /* Storage */,
+				AD0000000000000000000007 /* Utilities */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		AD0000000000000000000004 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				AB0000000000000000000002 /* NotebookModel.swift */,
+				AB0000000000000000000003 /* PageModel.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		AD0000000000000000000005 /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				AB0000000000000000000004 /* DataController.swift */,
+			);
+			path = Persistence;
+			sourceTree = "<group>";
+		};
+		AD0000000000000000000006 /* Storage */ = {
+			isa = PBXGroup;
+			children = (
+				AB0000000000000000000005 /* FileStore.swift */,
+			);
+			path = Storage;
+			sourceTree = "<group>";
+		};
+		AD0000000000000000000007 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				AB000000000000000000000E /* ViewportModel.swift */,
+				AB0000000000000000000010 /* NotebookLayout.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		AD0000000000000000000008 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				AD0000000000000000000009 /* Library */,
+				AD0000000000000000000010 /* Notebook */,
+				AD0000000000000000000011 /* Editor */,
+				AD0000000000000000000012 /* Search */,
+				AD0000000000000000000013 /* PDF */,
+				AD0000000000000000000014 /* Settings */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		AD0000000000000000000009 /* Library */ = {
+			isa = PBXGroup;
+			children = (
+				AB0000000000000000000006 /* LibraryView.swift */,
+			);
+			path = Library;
+			sourceTree = "<group>";
+		};
+		AD0000000000000000000010 /* Notebook */ = {
+			isa = PBXGroup;
+			children = (
+				AB000000000000000000000A /* NotebookView.swift */,
+			);
+			path = Notebook;
+			sourceTree = "<group>";
+		};
+		AD0000000000000000000011 /* Editor */ = {
+			isa = PBXGroup;
+			children = (
+				AB000000000000000000000B /* EditorView.swift */,
+			);
+			path = Editor;
+			sourceTree = "<group>";
+		};
+		AD0000000000000000000012 /* Search */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Search;
+			sourceTree = "<group>";
+		};
+		AD0000000000000000000013 /* PDF */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = PDF;
+			sourceTree = "<group>";
+		};
+		AD0000000000000000000014 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		AD0000000000000000000015 /* Drawing */ = {
+			isa = PBXGroup;
+			children = (
+				AD0000000000000000000016 /* PencilCanvas */,
+				AD0000000000000000000017 /* DrawingManager */,
+				AD0000000000000000000018 /* DrawingStorage */,
+				AD000000000000000000001A /* Cursor */,
+			);
+			path = Drawing;
+			sourceTree = "<group>";
+		};
+		AD0000000000000000000016 /* PencilCanvas */ = {
+			isa = PBXGroup;
+			children = (
+				AB000000000000000000000C /* PencilCanvasView.swift */,
+				AB000000000000000000000F /* EditorCamera.swift */,
+				AB0000000000000000000011 /* MacNotebookCanvasView.swift */,
+			);
+			path = PencilCanvas;
+			sourceTree = "<group>";
+		};
+		AD0000000000000000000017 /* DrawingManager */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = DrawingManager;
+			sourceTree = "<group>";
+		};
+		AD0000000000000000000018 /* DrawingStorage */ = {
+			isa = PBXGroup;
+			children = (
+				AB000000000000000000000D /* DrawingStorage.swift */,
+			);
+			path = DrawingStorage;
+			sourceTree = "<group>";
+		};
+		AD0000000000000000000019 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				AB0000000000000000000007 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		AD000000000000000000001A /* Cursor */ = {
+			isa = PBXGroup;
+			children = (
+				AB0000000000000000000021 /* CursorModel.swift */,
+				AB0000000000000000000022 /* NativeCursorFactory.swift */,
+			);
+			path = Cursor;
+			sourceTree = "<group>";
+		};
+		AD0000000000000000000020 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AB0000000000000000000008 /* MyNotes.app */,
+				AB0000000000000000000009 /* MyNotes macOS.app */,
+			);
+			name = Products;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AE0000000000000000000001 /* MyNotes */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BB0000000000000000000002 /* Build configuration list for PBXNativeTarget "MyNotes" */;
+			buildPhases = (
+				AF0000000000000000000001 /* Sources */,
+				AF0000000000000000000002 /* Resources */,
+				AF0000000000000000000003 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MyNotes;
+			productName = MyNotes;
+			productReference = AB0000000000000000000008 /* MyNotes.app */;
+			productType = "com.apple.product-type.application";
+		};
+		AE0000000000000000000002 /* MyNotes macOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BB0000000000000000000003 /* Build configuration list for PBXNativeTarget "MyNotes macOS" */;
+			buildPhases = (
+				AF0000000000000000000004 /* Sources */,
+				AF0000000000000000000005 /* Resources */,
+				AF0000000000000000000006 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "MyNotes macOS";
+			productName = "MyNotes macOS";
+			productReference = AB0000000000000000000009 /* MyNotes macOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		BA0000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2660;
+				LastUpgradeCheck = 2660;
+				TargetAttributes = {
+					AE0000000000000000000001 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					AE0000000000000000000002 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+				};
+			};
+			buildConfigurationList = BB0000000000000000000001 /* Build configuration list for PBXProject "MyNotes" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = AD0000000000000000000001;
+			productRefGroup = AD0000000000000000000020 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AE0000000000000000000001 /* MyNotes */,
+				AE0000000000000000000002 /* MyNotes macOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AF0000000000000000000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AC0000000000000000000007 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AF0000000000000000000005 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AC0000000000000000000017 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AF0000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AC0000000000000000000001 /* MyNotesApp.swift in Sources */,
+				AC0000000000000000000002 /* NotebookModel.swift in Sources */,
+				AC0000000000000000000003 /* PageModel.swift in Sources */,
+				AC0000000000000000000004 /* DataController.swift in Sources */,
+				AC0000000000000000000005 /* FileStore.swift in Sources */,
+				AC0000000000000000000006 /* LibraryView.swift in Sources */,
+				AC0000000000000000000008 /* NotebookView.swift in Sources */,
+				AC0000000000000000000009 /* EditorView.swift in Sources */,
+				AC000000000000000000000A /* PencilCanvasView.swift in Sources */,
+				AC000000000000000000000B /* DrawingStorage.swift in Sources */,
+				AC000000000000000000000C /* ViewportModel.swift in Sources */,
+				AC000000000000000000000D /* EditorCamera.swift in Sources */,
+				AC000000000000000000000E /* NotebookLayout.swift in Sources */,
+				AC000000000000000000000F /* MacNotebookCanvasView.swift in Sources */,
+				AC0000000000000000000021 /* CursorModel.swift in Sources */,
+				AC0000000000000000000022 /* NativeCursorFactory.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AF0000000000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AC0000000000000000000011 /* MyNotesApp.swift in Sources */,
+				AC0000000000000000000012 /* NotebookModel.swift in Sources */,
+				AC0000000000000000000013 /* PageModel.swift in Sources */,
+				AC0000000000000000000014 /* DataController.swift in Sources */,
+				AC0000000000000000000015 /* FileStore.swift in Sources */,
+				AC0000000000000000000016 /* LibraryView.swift in Sources */,
+				AC0000000000000000000018 /* NotebookView.swift in Sources */,
+				AC0000000000000000000019 /* EditorView.swift in Sources */,
+				AC000000000000000000001A /* PencilCanvasView.swift in Sources */,
+				AC000000000000000000001B /* DrawingStorage.swift in Sources */,
+				AC000000000000000000001C /* ViewportModel.swift in Sources */,
+				AC000000000000000000001D /* EditorCamera.swift in Sources */,
+				AC000000000000000000001E /* NotebookLayout.swift in Sources */,
+				AC000000000000000000001F /* MacNotebookCanvasView.swift in Sources */,
+				AC0000000000000000000023 /* CursorModel.swift in Sources */,
+				AC0000000000000000000024 /* NativeCursorFactory.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		BC0000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = auto;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		BC0000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = auto;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		BC0000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JHBT29D2BC;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tech.gnyanarushi.MyNotes;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		BC0000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JHBT29D2BC;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tech.gnyanarushi.MyNotes;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		BC0000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tech.gnyanarushi.MyNotesMac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Debug;
+		};
+		BC0000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tech.gnyanarushi.MyNotesMac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		BB0000000000000000000001 /* Build configuration list for PBXProject "MyNotes" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BC0000000000000000000001 /* Debug */,
+				BC0000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BB0000000000000000000002 /* Build configuration list for PBXNativeTarget "MyNotes" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BC0000000000000000000003 /* Debug */,
+				BC0000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BB0000000000000000000003 /* Build configuration list for PBXNativeTarget "MyNotes macOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BC0000000000000000000005 /* Debug */,
+				BC0000000000000000000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = BA0000000000000000000001 /* Project object */;
+}
