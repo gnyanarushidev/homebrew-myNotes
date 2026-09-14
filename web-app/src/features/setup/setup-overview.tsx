@@ -14,14 +14,14 @@ const steps = [
     title: "Frontend page previews",
     description:
       "Explore sign-in, invitations, notebooks, editor controls, and the admin dashboard before connecting live data.",
-    status: "Current step",
+    status: "Complete",
   },
   {
     number: "03",
-    title: "Your private account",
+    title: "Administrator authentication",
     description:
-      "Connect Supabase, configure the administrator, and add invitations with email or Google sign-in.",
-    status: "Up next",
+      "Supabase sign-in, protected admin access, password-setup emails, session refresh, and logout.",
+    status: "Current step",
   },
   {
     number: "04",
@@ -62,8 +62,8 @@ export function SetupOverview() {
           </h1>
           <p className={styles.introduction}>
             The frontend page previews are ready to explore and deploy.
-            Next, we&apos;ll connect the production domain, Supabase accounts,
-            and invitations.
+            Administrator authentication is now connected in code. Redeploy,
+            then send your initial admin setup email.
           </p>
           <div className={styles.actions}>
             <Link className={styles.primaryLink} href="/notebooks">
@@ -85,7 +85,7 @@ export function SetupOverview() {
               <li className={styles.step} key={step.number}>
                 <span className={styles.stepNumber}>{step.number}</span>
                 <div>
-                  <p className={index === 1 ? styles.currentStatus : styles.status}>
+                  <p className={index === 2 ? styles.currentStatus : styles.status}>
                     {step.status}
                   </p>
                   <h3>{step.title}</h3>
@@ -103,10 +103,10 @@ export function SetupOverview() {
         >
           <div>
             <p className={styles.eyebrow}>Next integration</p>
-            <h2 id="next-step-title">Connect Supabase authentication</h2>
+            <h2 id="next-step-title">Activate your administrator account</h2>
             <p>
-              Deploy the preview and connect mynotes.gnyanarushi.tech. We&apos;ll
-              then implement authentication using the configured Supabase project.
+              Deploy the authentication update, verify the callback URLs, and
+              run the admin invitation command documented in the project README.
             </p>
           </div>
           <span className={styles.nextLabel}>Email + Google sign-in</span>

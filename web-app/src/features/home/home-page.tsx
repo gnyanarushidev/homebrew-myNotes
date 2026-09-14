@@ -5,7 +5,7 @@ import styles from "./home-page.module.css";
 
 const features: { icon: IconName; title: string; text: string; label: string }[] = [
   { icon: "pen", title: "Room to think", text: "Paper that fits your ideas. A familiar notebook space for writing, sketching, and connecting the dots.", label: "Editor layout available" },
-  { icon: "lock", title: "A space of your own", text: "An invitation-only workspace, with your account and your notebooks at the heart of it.", label: "Authentication coming next" },
+  { icon: "lock", title: "A space of your own", text: "A personal workspace, with verified administrator access and a private account at its heart.", label: "Administrator sign-in available" },
   { icon: "monitor", title: "At your desk. On the go.", text: "The plan: one library on the web and Mac, with offline editing that catches up when you reconnect.", label: "Desktop sync planned" },
 ];
 
@@ -50,7 +50,7 @@ export function HomePage() {
 
         <section className={styles.invitation}>
           <div><p className={styles.eyebrow}>MADE FOR A SMALLER CIRCLE</p><h2>A personal workspace.<br />An open-ended canvas.</h2></div>
-          <div><p>MyNotes is taking shape, one thoughtful step at a time. Explore the preview now, or take a look at the invitation experience.</p><ActionLink href="/invite" variant="secondary">Preview an invitation <Icon name="mail" /></ActionLink></div>
+          <div><p>MyNotes is taking shape, one thoughtful step at a time. Explore the notebook preview, or activate your administrator account using your setup email.</p><ActionLink href="/invite" variant="secondary">Account setup <Icon name="mail" /></ActionLink></div>
         </section>
       </main>
       <footer className={styles.footer}><Brand /><span>A home for your notes.</span><Link href="/setup">Build status</Link></footer>

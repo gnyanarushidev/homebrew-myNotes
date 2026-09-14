@@ -11,15 +11,15 @@ MyNotes is becoming a shared web and Mac notebook application with private accou
 | [`Casks/`](Casks/) | Homebrew distribution metadata |
 | [`PROJECT_PLAN.md`](PROJECT_PLAN.md) | Agreed requirements and implementation phases |
 
-## Current step: frontend page previews
+## Current step: administrator authentication
 
-The web application now includes landing, sign-in, invitation, password-recovery, notebook-library, editor, and admin page previews. Search, preview notebook creation, paper/zoom controls, and sample invitations are interactive. All preview data is fictional and session-local.
+The web application now includes Supabase administrator sign-in, password setup/recovery, Google OAuth support, a protected admin dashboard, session refresh, and logout. Notebook and user-management interface previews remain available with fictional, session-local data.
 
-The next step is deploying the pages to Vercel and connecting `mynotes.gnyanarushi.tech`, followed by Supabase authentication and the admin invitation flow. Drawing, cloud storage, and desktop synchronization follow the sequence in the project plan.
+Follow [`web-app/ADMIN_SETUP.md`](web-app/ADMIN_SETUP.md) to redeploy, send the configured administrator a setup email, and sign in at `mynotes.gnyanarushi.tech/login`. General user invitations, drawing, cloud storage, and desktop synchronization follow the project plan.
 
 ## Run the web application
 
-Use Node.js 24 LTS for new development environments and deployment. The application also supports Node.js 20.19+ and 22.13+.
+Use Node.js 24 LTS for development and deployment. The application also supports Node.js 22.13+; its Supabase SDK requires Node.js 22 or later.
 
 From the repository root:
 
@@ -30,7 +30,7 @@ npm --prefix web-app run dev
 
 Open <http://localhost:3000>. The health endpoint is <http://localhost:3000/api/v1/health>.
 
-Try `/login`, `/invite`, `/notebooks`, `/notebooks/everyday-ideas`, and `/admin`. The authentication screens are previews; the admin page uses sample accounts only.
+Try `/login` and the protected `/admin` dashboard. Notebook previews are at `/notebooks`; the fictional user-management interface is at `/preview/admin`.
 
 ```sh
 npm --prefix web-app run check

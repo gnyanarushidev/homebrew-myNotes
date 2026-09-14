@@ -1,6 +1,6 @@
 # MyNotes — Project Requirements and Implementation Plan
 
-**Status:** Repository scaffold and basic frontend page previews implemented. Deployment/domain setup precedes authentication integration.
+**Status:** Full-stack application and administrator authentication implemented. Admin activation, general user invitations, and notebook persistence are the next steps.
 **Initial audience:** Personal, non-commercial use by invited users.
 **Platforms:** Web application and native macOS application.
 
@@ -24,7 +24,11 @@ The web code has been consolidated into one Next.js application under `web-app/`
 
 Consolidation verification completed locally: clean dependency installation, linting, TypeScript checks, production build, all six browser tests including the live backend health endpoint, and build-trace checks for the new application root. The existing Vercel project must be updated to Root Directory `web-app` before redeploying the latest commit.
 
-The immediate next step is to deploy this full-stack application to Vercel and connect `mynotes.gnyanarushi.tech`, then implement Supabase authentication and the admin invitation flow. See [`web-app/README.md`](web-app/README.md) for deployment and callback settings. The shared-document prototype remains an early prerequisite for implementing notebook content and synchronization.
+The administrator authentication increment adds Supabase password sign-in, Google OAuth callbacks, invitation/recovery password setup, HTTP-only session cookies, refresh, logout, and server-side admin authorization. `/admin` is protected; the fictional user-management preview moved to `/preview/admin`. A local setup command sends the configured admin an invitation or recovery email. No application role tables are needed for this initial single-admin step; authorization requires the verified Supabase email to match server-only `ADMIN_EMAIL`.
+
+Focused verification completed: production build and six authentication browser tests covering setup links, password changes, login/logout, CSRF rejection, forbidden/forged identities, refresh, and Google PKCE. The local setup command was checked against the configured Supabase project without sending an email. The existing full regression suite was not repeated for this increment.
+
+Redeploy and follow [`web-app/ADMIN_SETUP.md`](web-app/ADMIN_SETUP.md) to activate the administrator. General invited-user admission and management are the next account milestone. The shared-document prototype remains an early prerequisite for implementing notebook content and synchronization.
 
 The phase table below remains the full roadmap; its shared-document, authentication, and synchronization deliverables will be completed in later increments.
 

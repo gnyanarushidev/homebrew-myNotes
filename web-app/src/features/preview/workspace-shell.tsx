@@ -11,7 +11,7 @@ import styles from "./workspace-shell.module.css";
 function WorkspaceNavigation() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const isAdmin = pathname.startsWith("/admin");
+  const isAdmin = pathname.startsWith("/preview/admin");
 
   return (
     <aside className={styles.sidebar}>
@@ -20,11 +20,11 @@ function WorkspaceNavigation() {
         <p className={styles.navLabel}>YOUR WORKSPACE</p>
         <nav aria-label="Workspace navigation" className={styles.navigation}>
           <Link href="/notebooks" className={!isAdmin ? styles.activeLink : ""} aria-current={!isAdmin ? "page" : undefined} onClick={() => setMobileOpen(false)}><Icon name="book" />Notebooks</Link>
-          <Link href="/admin" className={isAdmin ? styles.activeLink : ""} aria-current={isAdmin ? "page" : undefined} onClick={() => setMobileOpen(false)}><Icon name="users" />Administration</Link>
+          <Link href="/preview/admin" className={isAdmin ? styles.activeLink : ""} aria-current={isAdmin ? "page" : undefined} onClick={() => setMobileOpen(false)}><Icon name="users" />Administration preview</Link>
         </nav>
         <div className={styles.sidebarNote}><Icon name="cloud" /><p>Your notes, in good company.</p><span>Cloud and offline synchronization are coming in a later step.</span></div>
         <div className={styles.profile}><span className={styles.avatar}>D</span><div><strong>Demo workspace</strong><span>Sample account</span></div></div>
-        <Link className={styles.signIn} href="/login"><Icon name="arrow" /> Go to sign-in preview</Link>
+        <Link className={styles.signIn} href="/admin"><Icon name="arrow" /> Open admin dashboard</Link>
       </div>
     </aside>
   );

@@ -5,7 +5,7 @@ test("main routes render, navigation works, and unknown URLs have a recovery pag
   expect(health.status()).toBe(200);
   expect(health.headers()["cache-control"]).toBe("no-store");
   expect(await health.json()).toMatchObject({ status: "ok", service: "mynotes-api", apiVersion: "v1" });
-  for (const path of ["/", "/login", "/invite", "/forgot-password", "/reset-password", "/notebooks", "/notebooks/everyday-ideas", "/admin", "/setup", "/auth/callback"]) {
+  for (const path of ["/", "/login", "/invite", "/forgot-password", "/notebooks", "/notebooks/everyday-ideas", "/preview/admin", "/setup"]) {
     const response = await request.get(path);
     expect(response.status(), path).toBe(200);
   }
@@ -19,45 +19,6 @@ test("main routes render, navigation works, and unknown URLs have a recovery pag
   expect(missing?.status()).toBe(404);
   await page.getByRole("link", { name: "Back to notebook preview" }).click();
   await expect(page.getByRole("heading", { name: "Your notebooks" })).toBeVisible();
-});
-
-test("authentication previews validate forms without sending credentials or making external requests", async ({ page }, testInfo) => {
-  const externalRequests: string[] = [];
-  page.on("request", request => {
-    if (!request.url().startsWith("http://127.0.0.1:3101/")) externalRequests.push(request.url());
-  });
-  await page.goto("/login");
-  await page.getByLabel("Email address", { exact: true }).fill("reader@example.com");
-  await page.getByLabel("Password", { exact: true }).fill("preview-password");
-  await page.getByRole("button", { name: "Show password" }).click();
-  await expect(page.getByLabel("Password", { exact: true })).toHaveAttribute("type", "text");
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("not submitted or saved");
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByLabel("Password", { exact: true })).toHaveValue("");
-  await page.getByRole("button", { name: "Continue with Google" }).click();
-  await expect(page.getByRole("status")).toContainText("No sign-in was attempted");
-  await page.screenshot({ path: testInfo.outputPath("login.png"), fullPage: true });
-  await page.getByRole("link", { name: "Forgot password?" }).click();
-  await expect(page.getByRole("heading", { name: "Forgot your password?" })).toBeVisible();
-  await page.getByLabel("Email address", { exact: true }).fill("reader@example.com");
-  await page.getByRole("button", { name: "Send reset link" }).click();
-  await expect(page.getByRole("status")).toContainText("no reset email was sent");
-  expect(externalRequests).toEqual([]);
-});
-
-test("invitation and password-reset previews reject mismatched passwords", async ({ page }) => {
-  for (const path of ["/invite", "/reset-password"]) {
-    await page.goto(path);
-    if (path === "/invite") await page.getByLabel("Invited email address").fill("invited@example.com");
-    await page.getByLabel("Password", { exact: true }).fill("preview-password");
-    await page.getByLabel("Confirm password").fill("different-password");
-    await page.getByRole("button", { name: path === "/invite" ? "Set up my account" : "Update password" }).click();
-    await expect(page.getByRole("form").getByRole("alert")).toContainText("don’t match");
-    await page.getByLabel("Confirm password").fill("preview-password");
-    await page.getByRole("button", { name: path === "/invite" ? "Set up my account" : "Update password" }).click();
-    await expect(page.getByRole("status")).toContainText("Preview only");
-  }
 });
 
 test("notebooks can be searched, created, and customized across workspace navigation", async ({ page }, testInfo) => {
@@ -93,7 +54,7 @@ test("notebooks can be searched, created, and customized across workspace naviga
 });
 
 test("admin invitations update sample counts and reject duplicates without sending emails", async ({ page }, testInfo) => {
-  await page.goto("/admin");
+  await page.goto("/preview/admin");
   const pending = page.locator("article").filter({ hasText: "Pending invitations" });
   await expect(pending.locator("strong")).toHaveText("1");
   await page.getByRole("button", { name: "Invite someone" }).click();
@@ -119,13 +80,13 @@ test.describe("mobile layout", () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 
   test("pages fit the viewport and the collapsed workspace navigation is usable", async ({ page }, testInfo) => {
-    for (const path of ["/", "/login", "/notebooks", "/admin", "/notebooks/everyday-ideas"]) {
+    for (const path of ["/", "/login", "/notebooks", "/preview/admin", "/notebooks/everyday-ideas"]) {
       await page.goto(path);
       const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
       expect(documentWidth, `${path} should not overflow the mobile viewport`).toBeLessThanOrEqual(390);
     }
     await page.getByRole("button", { name: "Toggle workspace navigation" }).click();
-    await page.getByRole("navigation", { name: "Workspace navigation" }).getByRole("link", { name: "Administration" }).click();
+    await page.getByRole("navigation", { name: "Workspace navigation" }).getByRole("link", { name: "Administration preview" }).click();
     await expect(page.getByRole("heading", { name: "People & invitations" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Toggle workspace navigation" })).toHaveAttribute("aria-expanded", "false");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);

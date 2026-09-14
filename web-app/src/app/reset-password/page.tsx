@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
-import { AuthPreview } from "@/features/auth/auth-preview";
+import { AuthForm } from "@/features/auth/auth-form";
+import { requireAdmin } from "@/server/auth/access";
 
 export const metadata: Metadata = { title: "Reset password" };
-export default function ResetPasswordPage() { return <AuthPreview mode="reset" />; }
+export const dynamic = "force-dynamic";
+export default async function ResetPasswordPage() {
+  const user = await requireAdmin();
+  return <AuthForm mode="reset" verifiedEmail={user.email} />;
+}

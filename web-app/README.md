@@ -2,41 +2,48 @@
 
 One application, one `package.json`, one environment file, and one Vercel deployment. Next.js serves the interface and backend API routes together.
 
-## Current step: frontend page previews
+## Current step: administrator authentication
 
 Implemented:
 
 - Next.js App Router and TypeScript frontend.
+- Supabase email/password sign-in, Google OAuth callbacks, password setup/recovery, session refresh, and logout.
+- Server-protected `/admin` and authentication APIs, restricted to the verified `ADMIN_EMAIL` identity.
+- A local `admin:invite` command to send the initial administrator setup email.
 - Responsive landing, authentication, notebook, editor, and admin page layouts.
-- Preview-only interactions: form validation, notebook search and creation, grid/list views, paper selection, zoom, page navigation, and sample invitations.
+- Preview-only notebook search and creation, grid/list views, paper selection, zoom, page navigation, and sample invitation management.
 - Shared workspace navigation and a collapsed mobile menu.
 - Server-only application services under `src/server/`.
 - Versioned application-liveness endpoint at `/api/v1/health`.
 - TypeScript settings, ESLint, npm scripts, and a lockfile.
 - Environment template for upcoming authentication and storage integrations.
 
-The current preview starts without Supabase, Backblaze, or email credentials. All displayed accounts and notebooks are fictional. Preview changes stay in React memory and reset on reload or when leaving the workspace routes. Forms do not submit credentials, create real accounts, or send emails.
+**Start here:** follow [`ADMIN_SETUP.md`](ADMIN_SETUP.md) to configure the deployed domain, send the initial admin email, choose a password, and sign in.
+
+Authentication now uses the configured Supabase project. The notebook library and `/preview/admin` remain fictional interface previews; their changes stay in React memory. Only the verified configured administrator receives access to the real `/admin` dashboard in this milestone. General user invitations and cloud notebooks follow in subsequent steps.
 
 ### Pages
 
 | Route | Purpose |
 | --- | --- |
 | `/` | Product landing page and links into the preview |
-| `/login` | Email/password and Google sign-in layout |
-| `/invite` | Invitation acceptance and password setup layout |
-| `/forgot-password` | Password-recovery form layout |
-| `/reset-password` | New-password form with confirmation validation |
+| `/login` | Administrator email/password and Google sign-in |
+| `/invite` | Invitation instructions; verified admins continue to password setup |
+| `/forgot-password` | Administrator password-reset email request |
+| `/reset-password` | Protected password setup/change form |
 | `/notebooks` | Sample library, search, sort, grid/list views, and preview notebook creation |
 | `/notebooks/everyday-ideas` | Sample editor with paper, zoom, and page controls |
-| `/admin` | Fictional user counts, invitation list, and preview invite/revoke actions |
-| `/auth/callback` | Clearly labeled placeholder for the upcoming authentication callback |
+| `/admin` | Server-protected administrator account dashboard |
+| `/preview/admin` | Fictional user counts and invitation-management UI |
+| `/auth/callback` | OAuth PKCE and invitation/recovery callback |
+| `/auth/complete` | Exchanges default email-link fragments for HTTP-only session cookies |
 | `/setup` | Development progress and API health link |
 
-The editor displays sample page artwork; drawing tools and PDF export are visibly disabled until the editor implementation. The admin page is a public UI preview backed only by fixtures. Real account data will be introduced together with server-side access controls.
+The editor displays sample page artwork; drawing tools and PDF export are visibly disabled until the editor implementation. The sample administration UI is explicitly separate from the protected account dashboard.
 
 ## Local development
 
-Use **Node.js 24 LTS** (see `.nvmrc`). The application also supports Node.js 20.19+ and 22.13+.
+Use **Node.js 24 LTS** (see `.nvmrc`). Node.js 22.13+ is also supported. Node.js 20 is no longer supported by the Supabase SDK used for authentication.
 
 Run these commands from the `web-app/` directory:
 
@@ -71,6 +78,8 @@ npm run test:e2e
 
 Playwright starts the production application on port 3101 and checks routes, authentication form behavior, notebook creation/navigation, sample invitations, and mobile layout. CI runs the same checks. Screenshots and failure traces are written to ignored `test-results/` paths.
 
+For the focused authentication suite only, use `npm run test:auth` after building. Tests use a separate local mock provider on port 54329 and fake credentials; they do not send real emails or use your hosted Supabase project. Run the full regression suite only when the changes warrant it.
+
 ### API smoke check
 
 With the application running:
@@ -96,7 +105,7 @@ For a new checkout, copy `.env.example` to `.env.local` inside `web-app/` and fi
 | `APP_URL` | Application origin and authentication redirects | Authentication |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | Authentication |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public Supabase client key | Authentication |
-| `SUPABASE_SECRET_KEY` | Server-only Supabase secret key or legacy service-role key | Admin invitations |
+| `SUPABASE_SECRET_KEY` | Supabase secret key or legacy service-role key used by the local setup command | Initial admin invitation |
 | `ADMIN_EMAIL` | Initial administrator email | Admin bootstrap |
 | `B2_ENDPOINT` | B2 S3-compatible endpoint | File storage |
 | `B2_REGION` | B2 bucket region | File storage |
@@ -104,7 +113,7 @@ For a new checkout, copy `.env.example` to `.env.local` inside `web-app/` and fi
 | `B2_APPLICATION_KEY_ID` | Server-only B2 application-key ID | File storage |
 | `B2_APPLICATION_KEY` | Server-only B2 application key | File storage |
 
-These are reserved configuration names; adding credentials alone does not enable the future integrations. Service initialization and validation will be added with each integration.
+Authentication requires the Supabase URL, publishable key, `ADMIN_EMAIL`, and `APP_URL`. B2 configuration is reserved for the storage integration. The admin invitation command additionally requires `SUPABASE_SECRET_KEY`.
 
 ### Admin password and invitation email
 
@@ -112,7 +121,7 @@ These are reserved configuration names; adding credentials alone does not enable
 
 If your email provider requires an app password, use it as the SMTP password in **Supabase Auth → SMTP Settings**. Configure the SMTP host, port, sender, and credentials there. Google sign-in uses its own OAuth configuration in Supabase.
 
-For the next step, prepare the Supabase project settings and admin email. Configure SMTP before testing invitations to external recipients; Supabase's default sender restricts delivery to project-team addresses.
+Configure SMTP before sending the initial admin invitation; Supabase's default sender restricts delivery to project-team addresses. Deployment and invitation commands are in [`ADMIN_SETUP.md`](ADMIN_SETUP.md).
 
 ## Application layout
 
@@ -168,17 +177,17 @@ The application now lives entirely in `web-app/`, with standard Next.js configur
 3. Wait for Vercel to verify the domain and provision HTTPS.
 4. Check the landing, login, notebook preview, and admin preview pages on the domain.
 
-After the authentication integration is implemented, configure:
+For authentication, configure:
 
 | Setting | Production value |
 | --- | --- |
 | Application `APP_URL` | `https://mynotes.gnyanarushi.tech` |
 | Supabase Site URL | `https://mynotes.gnyanarushi.tech` |
-| Supabase allowed app redirect | `https://mynotes.gnyanarushi.tech/auth/callback` |
+| Supabase allowed app redirects | `https://mynotes.gnyanarushi.tech/auth/callback` and `https://mynotes.gnyanarushi.tech/auth/callback?next=%2Freset-password` |
 | Google authorized redirect URI | The Supabase-provided `https://<project-ref>.supabase.co/auth/v1/callback` |
 
-The application callback is a preview placeholder today; it does not exchange authorization codes or accept invitations yet.
+The callback validates the Supabase identity before granting administrator access. See [`ADMIN_SETUP.md`](ADMIN_SETUP.md) for password setup and Google provider configuration.
 
 ## Next implementation step
 
-Deploy these pages and connect the custom domain first. Then connect Supabase, define protected user/invitation data, and implement verified admin bootstrap plus email/password and Google sign-in. Continue with the shared document prototype and cloud features according to [`PROJECT_PLAN.md`](../PROJECT_PLAN.md).
+Deploy the authentication update and activate the administrator. Next, define protected user/invitation data for general user onboarding, then continue with the shared document prototype and cloud features in [`PROJECT_PLAN.md`](../PROJECT_PLAN.md).

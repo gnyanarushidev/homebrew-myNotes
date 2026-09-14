@@ -14,11 +14,23 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
-  webServer: {
+  webServer: [{
+    command: "node tests/support/mock-supabase.mjs",
+    url: "http://127.0.0.1:54329/auth/v1/settings",
+    reuseExistingServer: false,
+  }, {
     command: "npm run start",
     url: "http://127.0.0.1:3101/api/v1/health",
     reuseExistingServer: false,
-    env: { PORT: "3101", NEXT_TELEMETRY_DISABLED: "1" },
+    env: {
+      PORT: "3101",
+      NEXT_TELEMETRY_DISABLED: "1",
+      APP_URL: "http://127.0.0.1:3101",
+      NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54329",
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test",
+      SUPABASE_SECRET_KEY: "sb_secret_test",
+      ADMIN_EMAIL: "admin@example.com",
+    },
     timeout: 30_000,
-  },
+  }],
 });

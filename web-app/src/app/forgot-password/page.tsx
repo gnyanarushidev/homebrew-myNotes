@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AuthPreview } from "@/features/auth/auth-preview";
+import { AuthForm } from "@/features/auth/auth-form";
 
 export const metadata: Metadata = { title: "Forgot password" };
-export default function ForgotPasswordPage() { return <AuthPreview mode="forgot" />; }
+export default function ForgotPasswordPage() { return <AuthForm mode="forgot" />; }
