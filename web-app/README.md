@@ -2,7 +2,7 @@
 
 One application, one `package.json`, one environment file, and one Vercel deployment. Next.js serves the interface and backend API routes together.
 
-## Current step: desktop-style cloud drawing and Mac import
+## Current step: shared B2 storage and desktop synchronization
 
 Implemented:
 
@@ -21,10 +21,11 @@ Implemented:
 - Versioned application-liveness endpoint at `/api/v1/health`.
 - TypeScript settings, ESLint, npm scripts, and a lockfile.
 - Notebook SQL migration with default-deny RLS and server-only table access.
+- Native bearer admission, direct signed file uploads, bounded file verification, metadata-only publication, operation receipts, deletion records, reference-aware cleanup and tracked B2 usage.
 
 **Start here:** follow [`ADMIN_SETUP.md`](ADMIN_SETUP.md) to configure the deployed domain, send the initial admin email, choose a password, and sign in.
 
-Authentication, user management, and notebook persistence use the configured Supabase project. Apply `supabase/migrations/001_notebooks.sql` and configure `SUPABASE_SECRET_KEY` in the deployed server environment. The administrator and verified users with an admin-issued app-metadata grant can open their own libraries. `/preview/admin` redirects to `/admin`.
+Authentication and notebook metadata use the configured Supabase project; page JSON and images use the private B2 bucket. Apply `002_cloud_storage.sql` after the initial migration and configure all B2/server variables. The single goal, plan, architecture and activation procedure are in [`PROJECT_PLAN.md`](../PROJECT_PLAN.md). `/preview/admin` redirects to `/admin`.
 
 ### Pages
 
@@ -43,7 +44,7 @@ Authentication, user management, and notebook persistence use the configured Sup
 | `/auth/complete` | Exchanges default email-link fragments for HTTP-only session cookies |
 | `/setup` | Development progress and API health link |
 
-The web notebook layout follows the native Mac app. Drawings are editable and cloud-backed. Mac exports preserve point paths, full-precision styles, IDs, paper settings, text, and bounded inline images. Transfer instructions and format details are in [`NOTEBOOK_TRANSFER.md`](NOTEBOOK_TRANSFER.md). Native cloud decoding and automatic Mac synchronization remain in [`DESKTOP_AUTH_PLAN.md`](../DESKTOP_AUTH_PLAN.md).
+The web notebook layout follows the native Mac app. Both clients use the same B2 page payloads and metadata revisions. Clean web documents receive cloud changes on foreground/periodic checks; drafts and active gestures are protected. Portable export/import remains documented in [`NOTEBOOK_TRANSFER.md`](NOTEBOOK_TRANSFER.md).
 
 ## Local development
 
@@ -70,7 +71,7 @@ npm run start
 ```
 
 - `check`: ESLint plus type checking of pages, API routes, server services, and browser tests.
-- `test:database`: executes the actual migration in embedded PostgreSQL (PGlite), checking derived metadata, permissions/RLS, and stale revision handling.
+- `test:database`: executes both migrations in embedded PostgreSQL (PGlite), checking permissions/RLS, atomic publication, conflicts, receipts, tombstones and reference-aware retention/cleanup.
 - `build`: production Next.js build including all pages and backend API routes.
 - `start`: serve the completed production build.
 
@@ -119,7 +120,7 @@ For a new checkout, copy `.env.example` to `.env.local` inside `web-app/` and fi
 | `B2_APPLICATION_KEY_ID` | Server-only B2 application-key ID | File storage |
 | `B2_APPLICATION_KEY` | Server-only B2 application key | File storage |
 
-The account/notebook increment requires the Supabase URL, publishable key, server secret, `ADMIN_EMAIL`, and `APP_URL`, plus the SQL migration. B2 configuration is reserved for the file-storage integration.
+Account notebooks require the Supabase URL, publishable/server keys, `ADMIN_EMAIL`, `APP_URL`, the SQL migrations, and all B2 variables. Use `npm run cloud:check` for a read-only readiness check. Browser uploads require the bucket CORS rule described in the project plan.
 
 ### Admin password and invitation email
 
@@ -196,7 +197,7 @@ The callback validates the Supabase identity before granting administrator acces
 
 ## Notebook API and current limits
 
-- `GET /api/notebooks?search=...`: owned notebook summaries; search includes titles and page text.
+- `GET /api/notebooks?search=...`: owned notebook summaries; global search uses titles. Page text remains in B2.
 - `POST /api/notebooks`: `{ id, document, mutationId }`, all IDs UUIDs; creates a notebook at revision 1.
 - `POST /api/notebooks/import`: `{ value, filename, id, mutationId }`; validates a web backup/Mac export and stores a private notebook. Native imports are deduplicated by account, source ID, and converted content.
 - `GET /api/notebooks/<id>`: owned document with `revision`, `mutation_id`, and timestamps.
@@ -204,10 +205,10 @@ The callback validates the Supabase identity before granting administrator acces
 - `DELETE /api/notebooks/<id>`: `{ revision }`; rejects stale deletion attempts.
 - `GET /api/admin/users` and `POST /api/admin/users`: admin-only account listing and `{ email, action: "invite" | "resend" | "revoke" }` operations.
 
-Mutations require same-origin JSON requests and a verified HTTP-only session. Notebook bodies are limited to 3 MB and 300 pages; JSON imports to 2.9 MB. The full document is saved as one record. Immediate retries of the latest mutation are idempotent, including simultaneous create requests. Deletions are currently permanent, and conflicts create an explicitly requested **whole-notebook copy**.
+These are small-document compatibility endpoints backed by B2. Browser mutations require a verified HTTP-only session and same-origin JSON; native requests may use verified bearer tokens. Legacy request bodies remain bounded to 3 MB and manual imports to 2.9 MB. Current editors use `/api/v1/sync/uploads`, `/files`, `/commit` and signed downloads: up to 16 MB/page, 8 MB/image and 128 MB/notebook, with 300 pages. Supabase stores only metadata and file references. Transactional operation receipts make retries safe; deletions retain tombstones and stale edits preserve whole-notebook conflict copies. See the project plan's API table for the full protocol.
 
 Recovery drafts are keyed by account and notebook in IndexedDB. Reopening a notebook restores an interrupted save; reconnecting or **Save now** retries it. Successful cloud saves remove their draft. Sign-out clears credentials and hides the library while retaining unsaved drafts for the same account's next sign-in. This is web recovery, not full offline operation or the Mac sign-out protocol.
 
 ## Next implementation step
 
-Apply the migration, deploy, and verify email delivery/Google identity linking on the configured Supabase project. Next, implement native bearer admission, desktop sign-in and account storage from [`DESKTOP_AUTH_PLAN.md`](../DESKTOP_AUTH_PLAN.md), finish the reverse drawing conversion, and introduce the change feed, durable operation ledger, deletion records, and per-page conflict protocol in [`PROJECT_PLAN.md`](../PROJECT_PLAN.md).
+Apply `002_cloud_storage.sql`, deploy, configure the native Google callback, and verify the Mac/web workflow on the hosted services. Implemented behavior, live setup status and remaining scale milestones are all tracked in [`PROJECT_PLAN.md`](../PROJECT_PLAN.md).

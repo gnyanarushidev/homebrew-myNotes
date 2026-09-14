@@ -19,7 +19,7 @@ export function NotebookEditor({ userId, notebookId }: { userId: string; noteboo
   return <NotebookSurface {...notebook} document={notebook.document} />;
 }
 
-function NotebookSurface({ document, update, status, error, conflict, copying, save, keepBoth }: Omit<ReturnType<typeof useNotebook>, "document"> & { document: NotebookDocument }) {
+function NotebookSurface({ document, update, status, error, conflict, copying, save, keepBoth, editing, remoteGeneration }: Omit<ReturnType<typeof useNotebook>, "document"> & { document: NotebookDocument }) {
   const [currentPage, setCurrentPage] = useState(0);
   const [zoom, setZoom] = useState(85);
   const [tool, setTool] = useState<EditorTool>("pen");
@@ -27,7 +27,8 @@ function NotebookSurface({ document, update, status, error, conflict, copying, s
   const [width, setWidth] = useState(3);
   const [opacity, setOpacity] = useState(1);
   const [selection, select] = useState<Selection>({ pageId: "", ids: [] });
-  const [history, setHistory] = useState<{ past: NotebookDocument[]; future: NotebookDocument[] }>({ past: [], future: [] });
+  const [savedHistory, setHistory] = useState<{ past: NotebookDocument[]; future: NotebookDocument[]; generation: number }>({ past: [], future: [], generation: remoteGeneration });
+  const history = savedHistory.generation === remoteGeneration ? savedHistory : { past: [], future: [], generation: remoteGeneration };
   const [settings, setSettings] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
@@ -42,12 +43,12 @@ function NotebookSurface({ document, update, status, error, conflict, copying, s
   const size = dimensions(page.size);
 
   function commit(next: NotebookDocument) {
-    setHistory(value => ({ past: [...value.past.slice(-39), document], future: [] }));
+    setHistory({ past: [...history.past.slice(-39), document], future: [], generation: remoteGeneration });
     update(next);
   }
   function changePage(id: string, change: Partial<NotePage>) { commit({ ...document, pages: document.pages.map(item => item.id === id ? { ...item, ...change } : item) }); }
-  function undo() { const previous = history.past.at(-1); if (previous) { setHistory({ past: history.past.slice(0, -1), future: [document, ...history.future] }); update(previous); setCurrentPage(value => Math.min(value, previous.pages.length - 1)); select({ pageId: "", ids: [] }); } }
-  function redo() { const next = history.future[0]; if (next) { setHistory({ past: [...history.past, document], future: history.future.slice(1) }); update(next); select({ pageId: "", ids: [] }); } }
+  function undo() { const previous = history.past.at(-1); if (previous) { setHistory({ past: history.past.slice(0, -1), future: [document, ...history.future], generation: remoteGeneration }); update(previous); setCurrentPage(value => Math.min(value, previous.pages.length - 1)); select({ pageId: "", ids: [] }); } }
+  function redo() { const next = history.future[0]; if (next) { setHistory({ past: [...history.past, document], future: history.future.slice(1), generation: remoteGeneration }); update(next); select({ pageId: "", ids: [] }); } }
   function removeSelection() { if (!selection.ids.length) return; const selectedPage = document.pages.find(item => item.id === selection.pageId); if (selectedPage) changePage(selectedPage.id, { strokes: selectedPage.strokes.filter(stroke => !selection.ids.includes(stroke.id)) }); select({ pageId: "", ids: [] }); }
   function choose(next: EditorTool) {
     const group = (value: EditorTool) => ["pencil", "highlighter", "eraser"].includes(value) ? value : "pen";
@@ -137,7 +138,7 @@ function NotebookSurface({ document, update, status, error, conflict, copying, s
         const index = frames.findIndex(frame => frame.getBoundingClientRect().bottom > center);
         if (index >= 0) setCurrentPage(index);
       }}>
-        <div className={styles.pages}>{document.pages.map((item, index) => { const style = effectiveStyle(document, item); return <section key={item.id} className={styles.pageFrame} data-page-frame aria-label={`Page ${index + 1}`}><PageCanvas page={item} index={index} zoom={zoom} template={style.template} paperColor={style.color} tool={tool} color={color} width={width} opacity={opacity} selection={selection} select={select} commit={strokes => changePage(item.id, { strokes })} text={text => changePage(item.id, { text })} focus={() => setCurrentPage(index)} /><span className={styles.pageNumber}>{index + 1}</span></section>; })}<button type="button" className={styles.addPage} disabled={document.pages.length >= 300} onClick={addPage}><Icon name="plus" width="15" />Add page</button></div>
+        <div className={styles.pages}>{document.pages.map((item, index) => { const style = effectiveStyle(document, item); return <section key={item.id} className={styles.pageFrame} data-page-frame aria-label={`Page ${index + 1}`}><PageCanvas page={item} index={index} zoom={zoom} template={style.template} paperColor={style.color} tool={tool} color={color} width={width} opacity={opacity} selection={selection} select={select} commit={strokes => changePage(item.id, { strokes })} text={text => changePage(item.id, { text })} focus={() => setCurrentPage(index)} editing={editing} /><span className={styles.pageNumber}>{index + 1}</span></section>; })}<button type="button" className={styles.addPage} disabled={document.pages.length >= 300} onClick={addPage}><Icon name="plus" width="15" />Add page</button></div>
       </div>
     </div>
     <footer className={styles.statusbar}><span>{size.width} × {size.height} pt</span><span role="status">Page {currentPage + 1} of {document.pages.length}</span>{selection.ids.length > 0 && <span>{selection.ids.length} selected · drag to move, corner to resize, dot to rotate</span>}<div><button type="button" onClick={fit}>Fit page</button><button type="button" aria-label="Actual size" onClick={() => changeZoom(100)}>1:1</button><button type="button" aria-label="Zoom out" onClick={() => changeZoom(zoom - 10)}>−</button><output aria-label="Zoom level">{Math.round(zoom)}%</output><button type="button" aria-label="Zoom in" onClick={() => changeZoom(zoom + 10)}>+</button></div></footer>

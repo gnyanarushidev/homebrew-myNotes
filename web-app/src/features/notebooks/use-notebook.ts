@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { loadCloudNotebook, saveCloudNotebook } from "@/lib/cloud-client";
 import { api, ApiError } from "@/lib/api";
 import { readDraft, writeDraft } from "@/lib/drafts";
 import { documentSchema, type NotebookDocument, type NotebookRecord } from "@/lib/notebook";
@@ -13,6 +14,9 @@ export function useNotebook(userId: string, id: string) {
   const [status, setStatus] = useState("Loading…");
   const [conflict, setConflict] = useState(false);
   const [copying, setCopying] = useState(false);
+  const [remoteGeneration, setRemoteGeneration] = useState(0);
+  const gestures = useRef(0);
+  const editing = useCallback((active: boolean) => { gestures.current = Math.max(0, gestures.current + (active ? 1 : -1)); }, []);
   const base = useRef<NotebookRecord | null>(null);
   const current = useRef<NotebookDocument | null>(null);
   const dirty = useRef(false);
@@ -31,7 +35,7 @@ export function useNotebook(userId: string, id: string) {
     if (mounted.current) { setStatus("Saving…"); setError(""); }
     try {
       await writeDraft(userId, id, { record: base.current, document: snapshot, mutationId, savedAt: Date.now(), conflictCopy: conflictCopy.current.id ? conflictCopy.current : undefined });
-      const record = await api<NotebookRecord>(`/api/notebooks/${id}`, { method: "PUT", body: JSON.stringify({ id, document: snapshot, revision: base.current.revision, mutationId }) });
+      const record = await saveCloudNotebook(id, snapshot, base.current.revision, mutationId, base.current.storage);
       base.current = record;
       window.dispatchEvent(new Event("mynotes-library-change"));
       if (current.current === snapshot) {
@@ -59,7 +63,7 @@ export function useNotebook(userId: string, id: string) {
     async function load() {
       const draft = await readDraft(userId, id).catch(() => undefined);
       try {
-        const record = await api<NotebookRecord>(`/api/notebooks/${id}`);
+        const record = await loadCloudNotebook(id);
         if (cancelled) return;
         const recovered = draft && draft.record.id === id && documentSchema.safeParse(draft.document).success;
         base.current = recovered ? draft.record : record;
@@ -83,6 +87,24 @@ export function useNotebook(userId: string, id: string) {
       }
     }
     void load();
+    const receive = async () => {
+      if (cancelled || gestures.current || dirty.current || running.current || !base.current) return;
+      const previous = base.current;
+      try {
+        const remote = await api<{ revision: number; deleted: boolean }>(`/api/v1/sync/notebooks/${id}`);
+        if (cancelled || gestures.current || dirty.current || base.current !== previous) return;
+        if (remote.deleted) { setDocument(null); setError("This notebook was deleted on another device."); return; }
+        if (remote.revision !== previous.revision) {
+          const record = await loadCloudNotebook(id);
+          if (cancelled || gestures.current || dirty.current || base.current !== previous) return;
+          base.current = record; current.current = record.document; setDocument(record.document); setStatus("Updated from cloud"); setError("");
+          setRemoteGeneration(value => value + 1);
+          window.dispatchEvent(new Event("mynotes-library-change"));
+        }
+      } catch { /* Retain the current view during a transient read outage. */ }
+    };
+    const polling = setInterval(() => void receive(), 15000);
+    window.addEventListener("focus", receive);
     const online = () => { void save(); };
     const leaving = (event: BeforeUnloadEvent) => { if (dirty.current) { event.preventDefault(); event.returnValue = ""; } };
     window.addEventListener("online", online); window.addEventListener("beforeunload", leaving);
@@ -90,6 +112,7 @@ export function useNotebook(userId: string, id: string) {
       cancelled = true; mounted.current = false;
       if (timer.current) clearTimeout(timer.current);
       window.removeEventListener("online", online); window.removeEventListener("beforeunload", leaving);
+      clearInterval(polling); window.removeEventListener("focus", receive);
     };
   }, [id, userId, save]);
 
@@ -115,7 +138,7 @@ export function useNotebook(userId: string, id: string) {
     try {
       await writeDraft(userId, id, { record: base.current, document: current.current, mutationId: mutation.current.id, savedAt: Date.now(), conflictCopy: conflictCopy.current });
       const copy = { ...current.current, title: `${current.current.title.slice(0, 95)} (conflict copy)` };
-      const record = await api<NotebookRecord>("/api/notebooks", { method: "POST", body: JSON.stringify({ ...conflictCopy.current, document: copy }) });
+      const record = await saveCloudNotebook(conflictCopy.current.id, copy, 0, conflictCopy.current.mutationId);
       await writeDraft(userId, record.id, { record, document: { ...current.current, title: copy.title }, mutationId: crypto.randomUUID(), savedAt: Date.now() });
       await writeDraft(userId, id);
       dirty.current = false;
@@ -123,5 +146,5 @@ export function useNotebook(userId: string, id: string) {
     } catch (failure) { setError((failure as Error).message); }
     finally { running.current = false; setCopying(false); }
   }
-  return { document, update, status, error, conflict, copying, save, keepBoth };
+  return { document, update, status, error, conflict, copying, save, keepBoth, editing, remoteGeneration };
 }

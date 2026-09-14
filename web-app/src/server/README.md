@@ -8,8 +8,10 @@ Server-only TypeScript services live inside the Next.js application and are impo
 - `@/server/auth/`: verified account/admin access, HTTP-only sessions, and auth settings.
 - `@/server/http`: authenticated API requests, same-origin JSON body limits, and private responses.
 - `@/server/service`: server-secret Supabase client, account listing, and recovery eligibility.
+- `@/server/cloud`: metadata manifests, transactions/receipts, account change feed and legacy JSONB migration.
+- `@/server/storage`: private B2 staging, validation, gzip page objects, signed downloads and reference-aware cleanup.
 
-Notebook CRUD lives at `/api/notebooks`; admin account management lives at `/api/admin/users`. The notebook table denies all direct browser access through table grants and default-deny RLS. Service-role queries must include the verified user's immutable `owner_id`; admin access does not bypass notebook ownership. See the [application README](../../README.md) and `supabase/migrations/001_notebooks.sql` for deployment.
+The shared file/sync protocol lives at `/api/v1/sync`; `/api/notebooks` remains a small-document compatibility interface. Admin management lives at `/api/admin/users`. Metadata tables deny direct browser access through grants and default-deny RLS. Service-role queries include the verified immutable `owner_id`; administrator status does not bypass notebook ownership. Apply `002_cloud_storage.sql` and follow the repository's authoritative `PROJECT_PLAN.md`.
 
 The health response confirms that the application is running. It does not check Supabase or Backblaze connectivity.
 
@@ -21,4 +23,4 @@ The health response confirms that the application is running. It does not check 
 - Add authentication and ownership checks alongside each protected feature.
 - Read runtime environment settings from the Next.js application environment at `web-app/.env.local` locally and Vercel project settings when deployed.
 
-Upcoming modules follow `PROJECT_PLAN.md`: invitation lifecycle/audit data, shared drawing compatibility, synchronization, file storage, and native imports. Current notebook revisions are whole-document compare-and-swap values, not a synchronization change feed.
+Current publication uses whole-notebook compare-and-swap revisions, independent page objects and an account-serialized change sequence. Later work includes finer page merging, bounded stale-device/operation retention, invitation lifecycle auditing and dense-document performance.

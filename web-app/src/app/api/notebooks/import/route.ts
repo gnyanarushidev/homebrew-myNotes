@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { parseNotebookImport } from "@/lib/notebook-import";
 import { authorized, apiFailure, apiJson, HttpError, readJson } from "@/server/http";
-import { serviceClient } from "@/server/service";
+import { assemble, getCloud, storeDocument } from "@/server/cloud";
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,15 +22,9 @@ export async function POST(request: NextRequest) {
       const hex = bytes.toString("hex");
       id = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
     }
-    const service = serviceClient();
-    const fields = "id,document,revision,mutation_id,created_at,updated_at";
-    const { data, error } = await service.from("mynotes_notebooks").insert({ id, owner_id: auth.user.id, document: imported.document, mutation_id: input.data.mutationId }).select(fields).single();
-    if (!error) return auth.finish(apiJson(data, 201));
-    if (error.code === "23505") {
-      const { data: existing, error: readError } = await service.from("mynotes_notebooks").select(fields).eq("id", id).eq("owner_id", auth.user.id).maybeSingle();
-      if (!readError && existing && (imported.sourceId || existing.mutation_id === input.data.mutationId)) return auth.finish(apiJson(existing));
-      throw new HttpError(409, "This import ID is already in use. Reopen the import dialog.");
-    }
-    throw new HttpError(503, "Import could not be saved. Check notebook database setup and retry the same file.");
-  } catch (error) { return apiFailure(error); }
+    const existing = await getCloud(auth.user.id, id, true).catch(error => { if (error instanceof HttpError && error.status === 404) return null; throw error; });
+    if (existing && !existing.deleted && (imported.sourceId || existing.mutation_id === input.data.mutationId)) return auth.finish(apiJson(await assemble(auth.user.id, existing)));
+    const record = await storeDocument(auth.user.id, id, imported.document, input.data.mutationId, 0, existing?.deleted ?? false);
+    return auth.finish(apiJson(record, 201));
+  } catch (error) { return apiFailure(error, request); }
 }

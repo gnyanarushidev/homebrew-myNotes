@@ -39,8 +39,8 @@ Drawing edits use the existing revision-checked notebook API. Each completed ges
 
 ## Setup and current boundaries
 
-Cloud access requires the migration and server environment in [ADMIN_SETUP.md](ADMIN_SETUP.md). Drawings are stored in Supabase Postgres inside the notebook document. Images are currently bounded inline data; B2-backed large assets and staged uploads remain a later storage increment.
+Cloud access requires `002_cloud_storage.sql` and the B2/server environment in [PROJECT_PLAN.md](../PROJECT_PLAN.md). Page JSON is gzip-compressed into private B2 objects; images are separate B2 files. Supabase stores metadata and file references only. The automatic Mac account workflow also uses this storage protocol.
 
 Imports are limited to **2.9 MB**, saves to **3 MB**, and notebooks to **300 pages**. Oversized or unsupported exports report an error. PencilKit `.pkdrawing` files are not supported by this Mac transfer path.
 
-This is an explicit import, not automatic desktop sync. Desktop sign-in, per-account local stores, downloads, the native web-document decoder, and bidirectional synchronization are specified in [DESKTOP_AUTH_PLAN.md](../DESKTOP_AUTH_PLAN.md). The current desktop app still opens its existing local library without authentication.
+This page describes portable manual transfer. The current desktop app also supports authenticated automatic synchronization and **Import existing local notebooks**, preserving original data. The single authoritative goal, plan and setup instructions are in [PROJECT_PLAN.md](../PROJECT_PLAN.md).

@@ -8,7 +8,7 @@ import { AUTH_COOKIE, type AuthSettings } from "./settings";
 export const PRIVATE_HEADERS = {
   "Cache-Control": "private, no-store, max-age=0",
   "Referrer-Policy": "no-referrer",
-  Vary: "Cookie",
+  Vary: "Cookie, Authorization",
 };
 
 export function isVerifiedAdmin(user: User | null, settings: AuthSettings): user is User & { email: string } {

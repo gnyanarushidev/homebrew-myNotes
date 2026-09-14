@@ -15,9 +15,13 @@
     "test:e2e": "playwright test",
     "test:auth": "playwright test tests/auth.spec.ts",
     "test:database": "node --test tests/database.test.mjs",
+    "cloud:check": "node scripts/check-cloud.mjs",
+    "cloud:configure-b2": "node scripts/configure-b2.mjs",
     "admin:invite": "node scripts/invite-admin.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1131.0",
+    "@aws-sdk/s3-request-presigner": "3.1131.0",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.116.0",
     "konva": "10.5.0",

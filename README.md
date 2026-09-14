@@ -11,13 +11,13 @@ MyNotes is becoming a shared web and Mac notebook application with private accou
 | [`Casks/`](Casks/) | Homebrew distribution metadata |
 | [`PROJECT_PLAN.md`](PROJECT_PLAN.md) | Agreed requirements and implementation phases |
 
-## Current step: desktop-style cloud drawing
+## Current step: desktop login and B2-backed synchronization
 
-The web application now has a Mac-style notebook sidebar, continuous dark canvas workspace, floating drawing tools, selection/transforms, undo/redo, cloud autosave, and PDF/JSON export. Invited-user sign-in and admin invitation controls protect each user's notebooks.
+The Mac app now includes account sign-in, Keychain sessions, account-local notebooks, migration of existing local drawings, and automatic upload/download synchronization. Compressed page JSON and images live in private Backblaze B2 storage; Supabase stores ownership, notebook metadata, file references and synchronization records. The web editor reads/writes those same cloud records.
 
-Follow [`web-app/ADMIN_SETUP.md`](web-app/ADMIN_SETUP.md) to configure cloud storage and authentication. Bring existing Mac drawings into the cloud with **Export for web (.json)** in the updated Mac app, then import through the web sidebar; see [`NOTEBOOK_TRANSFER.md`](web-app/NOTEBOOK_TRANSFER.md).
+The agreed personal-app goal, implementation plan, architecture and activation steps are consolidated in **[`PROJECT_PLAN.md`](PROJECT_PLAN.md)**. Apply the new `002_cloud_storage.sql` migration and deploy the server before using desktop sign-in/sync. The current Homebrew release may predate this source update; build the current Mac sources to use the account workflow.
 
-Desktop sign-in, Keychain sessions, per-account local stores, migration, and offline synchronization are specified in [`DESKTOP_AUTH_PLAN.md`](DESKTOP_AUTH_PLAN.md). Automatic Mac/cloud synchronization is the next implementation track.
+On the Mac, **Import existing local notebooks** copies your original local data into the signed-in account and synchronizes it. Manual export/import remains available as a portable transfer option.
 
 ## Run the web application
 

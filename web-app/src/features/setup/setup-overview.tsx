@@ -28,14 +28,14 @@ const steps = [
     title: "Desktop-style cloud drawing",
     description:
       "A Mac-style sidebar and continuous canvas, floating drawing tools, cloud saves, PDF export, and import of local Mac drawings.",
-    status: "Current step",
+    status: "Complete",
   },
   {
     number: "05",
     title: "Desktop sign-in and offline sync",
     description:
       "Supabase sign-in, Keychain sessions, private account stores, local migration, downloads, and synchronization after reconnecting.",
-    status: "Planned",
+    status: "Current step",
   },
 ];
 
@@ -85,7 +85,7 @@ export function SetupOverview() {
               <li className={styles.step} key={step.number}>
                 <span className={styles.stepNumber}>{step.number}</span>
                 <div>
-                  <p className={index === 3 ? styles.currentStatus : styles.status}>
+                  <p className={index === 4 ? styles.currentStatus : styles.status}>
                     {step.status}
                   </p>
                   <h3>{step.title}</h3>
@@ -103,10 +103,10 @@ export function SetupOverview() {
         >
           <div>
             <p className={styles.eyebrow}>Next integration</p>
-            <h2 id="next-step-title">Sign into the same account on Mac</h2>
+            <h2 id="next-step-title">Activate your shared cloud library</h2>
             <p>
-              Add native sign-in and account-specific local storage, then
-              download cloud notebooks and synchronize offline changes.
+              Apply the cloud metadata migration and deploy the configured B2
+              backend, then sign in on Mac and import your existing local notebooks.
             </p>
           </div>
           <span className={styles.nextLabel}>Mac + web compatibility</span>

@@ -23,7 +23,7 @@ export const strokeSchema = z.object({
   geometry: z.enum(["shape", "polyline"]).optional(),
   rgba: rgbaSchema.optional(),
 });
-export const imageSchema = z.object({ mimeType: z.enum(["image/png", "image/jpeg"]), data: z.string().max(2_800_000).regex(/^[A-Za-z0-9+/]*={0,2}$/) });
+export const imageSchema = z.object({ mimeType: z.enum(["image/png", "image/jpeg"]), data: z.string().max(10_666_668).regex(/^[A-Za-z0-9+/]*={0,2}$/) });
 export const pageSchema = z.object({
   id: z.uuid(), template: z.enum(templates), color: z.enum(paperColors), size: z.enum(pageSizes),
   inheritsStyle: z.boolean(), strokes: z.array(strokeSchema).max(20000), text: z.string().max(100000).default(""),
@@ -47,7 +47,7 @@ export type Point = z.infer<typeof pointSchema>;
 export type Stroke = z.infer<typeof strokeSchema>;
 export type NotePage = z.infer<typeof pageSchema>;
 export type NotebookDocument = z.infer<typeof documentSchema>;
-export type NotebookRecord = { id: string; document: NotebookDocument; revision: number; mutation_id: string; created_at: string; updated_at: string };
+export type NotebookRecord = { id: string; document: NotebookDocument; revision: number; mutation_id: string; created_at: string; updated_at: string; storage?: import("./cloud").CloudManifest };
 export type NotebookSummary = { id: string; title: string; template: Template; color: PaperColor; pageCount: number; updated_at: string; text: string };
 export type Account = { id: string; email: string; isAdmin: boolean };
 

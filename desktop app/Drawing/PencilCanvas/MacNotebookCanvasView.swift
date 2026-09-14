@@ -81,6 +81,7 @@ final class MacNotebookCanvasNSView: NSView {
         let size: CGSize
         let template: PageTemplate
         let color: PageColor
+        let drawingFile: String?
     }
 
     weak var camera: EditorCamera?
@@ -95,6 +96,7 @@ final class MacNotebookCanvasNSView: NSView {
     private var pagesByID: [UUID: Page] = [:]
     private var pageConfigurations: [PageConfiguration] = []
     private var loadedPageIDs = Set<UUID>()
+    private let drawingDirectory = FileStore.readDrawingsDirectory
     private var exportObserver: NSObjectProtocol?
 
     override init(frame frameRect: NSRect) {
@@ -114,7 +116,11 @@ final class MacNotebookCanvasNSView: NSView {
     private func observeExports() {
         exportObserver = NotificationCenter.default.addObserver(forName: .captureMacNotebookExport, object: nil, queue: .main) { [weak self] notification in
             MainActor.assumeIsolated {
-                guard let self, self.window?.isKeyWindow == true, let request = notification.object as? MacNotebookExportRequest else { return }
+                guard let self, let request = notification.object as? MacNotebookExportRequest else { return }
+                for (id, page) in self.pagesByID where page.notebook?.id == request.notebookID {
+                    if self.pageViews[id]?.isHandlingInkGesture == true { request.isEditing = true }
+                }
+                guard self.window?.isKeyWindow == true else { return }
                 for (id, page) in self.pagesByID where page.notebook?.id == request.notebookID && self.loadedPageIDs.contains(id) {
                     if let view = self.pageViews[id] { request.strokes[id] = view.strokes }
                 }
@@ -145,7 +151,8 @@ final class MacNotebookCanvasNSView: NSView {
                 id: $0.id,
                 size: $0.pageSize.dimensions,
                 template: $0.effectiveTemplate,
-                color: $0.effectivePageColor
+                color: $0.effectivePageColor,
+                drawingFile: $0.drawingFileName
             )
         }
         guard configurations != pageConfigurations else { return }
@@ -194,6 +201,11 @@ final class MacNotebookCanvasNSView: NSView {
             pageView.toolSettings = toolSettings
             pageView.frame = bounds
             if pageConfigurations.first(where: { $0.id == page.id }) != configurations[index] {
+                if let old = pageConfigurations.first(where: { $0.id == page.id }), old.drawingFile != page.drawingFileName {
+                    pageView.strokes = loadStrokes(for: page)
+                    pageView.clearSelection()
+                    if page.drawingFileName?.hasPrefix("\(page.notebook?.id.uuidString.lowercased() ?? "")-") == true { pageView.undoManager?.removeAllActions(withTarget: pageView) }
+                }
                 pageView.needsDisplay = true
             }
         }
@@ -213,6 +225,7 @@ final class MacNotebookCanvasNSView: NSView {
     }
 
     private func makePageView(page: Page) -> MacCanvasNSView {
+        let drawingDirectory = self.drawingDirectory
         let pageView = MacCanvasNSView(frame: bounds)
         pageView.selectedTool = selectedTool
         pageView.toolSettings = toolSettings
@@ -241,15 +254,24 @@ final class MacNotebookCanvasNSView: NSView {
             if page.drawingFileName == nil {
                 page.drawingFileName = "\(page.id.uuidString).drawing.json"
             }
-            MacDrawingStorage.save(strokes, to: page.drawingFileName!)
-            try? self.modelContext?.save()
+            let key = drawingDirectory.appendingPathComponent(page.drawingFileName!).path
+            do {
+                try MacDrawingStorage.write(strokes, name: page.drawingFileName!, directory: drawingDirectory)
+                try self.modelContext?.save()
+                FileStore.saveFailures.removeValue(forKey: key)
+            } catch { FileStore.saveFailures[key] = error.localizedDescription }
         }
         return pageView
     }
 
     private func loadStrokes(for page: Page) -> [MacStroke] {
         loadedPageIDs.insert(page.id)
-        let strokes = page.drawingFileName.map(MacDrawingStorage.load) ?? []
+        var name = page.drawingFileName
+        let fallback = "\(page.id.uuidString).drawing.json"
+        if name == nil, FileManager.default.fileExists(atPath: drawingDirectory.appendingPathComponent(fallback).path) { name = fallback; page.drawingFileName = fallback }
+        let strokes: [MacStroke]
+        do { strokes = try name.map { try MacDrawingStorage.read(from: $0, directory: drawingDirectory) } ?? [] }
+        catch { return [] } // Keep the stored content flag; sync/export reports the damaged source.
         if page.hasDrawingContent != !strokes.isEmpty {
             page.hasDrawingContent = !strokes.isEmpty
         }

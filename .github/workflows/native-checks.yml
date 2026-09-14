@@ -1,0 +1,29 @@
+name: Native checks
+
+on:
+  push:
+    paths:
+      - "desktop app/**"
+      - "web-app/tests/fixtures/**"
+      - ".github/workflows/native-checks.yml"
+  pull_request:
+    paths:
+      - "desktop app/**"
+      - "web-app/tests/fixtures/**"
+      - ".github/workflows/native-checks.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  mac:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: desktop app
+    steps:
+      - uses: actions/checkout@v4
+      - run: xcodebuild -quiet -project MyNotes.xcodeproj -scheme "MyNotes macOS" -configuration Debug -derivedDataPath "$RUNNER_TEMP/mynotes-build" CODE_SIGNING_ALLOWED=NO build
+      - run: MYNOTES_TEST_TEMP_ROOT="$RUNNER_TEMP" bash Tests/run-regressions.sh --selection
+      - run: MYNOTES_TEST_TEMP_ROOT="$RUNNER_TEMP" bash Tests/run-regressions.sh --transfer
+      - run: MYNOTES_TEST_TEMP_ROOT="$RUNNER_TEMP" bash Tests/run-regressions.sh --cloud

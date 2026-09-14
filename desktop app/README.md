@@ -1,6 +1,6 @@
 # MyNotes — Native App
 
-MyNotes is a native notebook app for iPhone, iPad, and Mac, built with SwiftUI. Create multi-page notebooks, write or sketch on customizable paper, and export your work as PDFs. Notes are stored locally, with no account or backend required.
+MyNotes is a native notebook app for iPhone, iPad, and Mac, built with SwiftUI. The current Mac sources add invited-account sign-in, Keychain sessions, local offline notebooks and B2-backed cloud synchronization. iPhone/iPad remain local-only. The application's goal, desktop-first plan and setup are consolidated in [`PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## Features
 
@@ -32,7 +32,7 @@ On Mac, a movable floating toolbar provides ink colors, stroke widths, highlight
 | iPhone / iPad | iOS / iPadOS 17.0 | `MyNotes` |
 | Mac | macOS 14.0 | `MyNotes macOS` |
 
-The project uses Apple frameworks only. There are no third-party packages to install, required environment variables, API keys, or external services to configure.
+The native project uses Apple frameworks only, including URLSession, AuthenticationServices, CryptoKit and Security. Mac cloud access requires the configured Next.js/Supabase/B2 backend. The app obtains the matching public Supabase configuration from its API origin; server secret keys are never shipped in the native app.
 
 ## Install on Mac with Homebrew
 
@@ -151,7 +151,7 @@ The app shares SwiftUI screens and SwiftData models across platforms, with separ
 
 The export menu now includes **Export for web (.json)**. It produces an editable notebook archive for the web app's sidebar import button. Existing local drawings are preserved and imports are private to the signed-in web account. Full instructions and current size limits are in [`web-app/NOTEBOOK_TRANSFER.md`](../web-app/NOTEBOOK_TRANSFER.md).
 
-Desktop authentication and automatic cloud synchronization are not yet implemented. The native app still opens its local library without a login. The concrete rollout for Supabase sign-in, Google PKCE, Keychain storage, per-account stores, legacy migration, downloads, offline edits, and sign-out is in [`DESKTOP_AUTH_PLAN.md`](../DESKTOP_AUTH_PLAN.md).
+The Mac app now opens an authenticated account store. Sign in and choose **Import existing local notebooks** to copy/synchronize the original SwiftData notebooks and drawing files. Original data is retained. Existing admitted sessions can reopen their downloaded account offline; pending snapshots survive restart and are retried. Cloud edits download on foreground, every 15 seconds and **Sync now**. Whole-notebook conflicts preserve copies, including edits to deleted notebooks. See [`PROJECT_PLAN.md`](../PROJECT_PLAN.md) for activation steps and current boundaries.
 
 PDF export is a rendered document; **Export for web** preserves editable Mac notebook data within the current 2.9 MB transfer limit.
 
@@ -182,6 +182,14 @@ bash Tests/run-regressions.sh --transfer
 ```
 
 Add `--fixture` to print the deterministic native JSON fixture also used by web import tests.
+
+The native account/synchronization harness uses isolated temporary stores and a local URLProtocol fixture:
+
+```sh
+bash Tests/run-regressions.sh --cloud
+```
+
+It checks native/cloud round-trip, two-device updates/conflicts, lost acknowledgements and restart recovery, legacy preservation, duplicate-page isolation, deleted-notebook recovery and callback validation.
 
 The runner uses the system temporary directory by default. Set `MYNOTES_TEST_TEMP_ROOT` to an existing writable directory to override it.
 

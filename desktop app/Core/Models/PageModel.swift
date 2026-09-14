@@ -42,6 +42,8 @@ final class Page {
 
     var text: String
     var drawingFileName: String?
+    // Remote IDs remain stable even when two imported notebooks share page IDs.
+    var cloudPageID: String?
     @Attribute(.externalStorage) var imageData: Data?
     var templateRawValue: String = PageTemplate.blank.rawValue
     var pageSizeRawValue: String = PageSize.letterPortrait.rawValue

@@ -34,6 +34,7 @@ extension Notification.Name {
 @MainActor final class MacNotebookExportRequest {
     let notebookID: UUID
     var strokes: [UUID: [MacStroke]] = [:]
+    var isEditing = false
     init(notebookID: UUID) { self.notebookID = notebookID }
 }
 

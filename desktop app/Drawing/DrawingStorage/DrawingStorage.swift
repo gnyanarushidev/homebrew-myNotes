@@ -244,14 +244,21 @@ enum DrawingStorage {
 
     fileprivate static func urlForReading(_ fileName: String) -> URL {
         // FileStore's write URL creates the directory; reads must remain side-effect free.
-        let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
-            ?? FileManager.default.temporaryDirectory
-        return base.appendingPathComponent("Drawings", isDirectory: true).appendingPathComponent(fileName)
+        return FileStore.readDrawingsDirectory.appendingPathComponent(fileName)
     }
 }
 
 #if os(macOS)
 enum MacDrawingStorage {
+    static func read(from name: String, directory: URL) throws -> [MacStroke] {
+        guard name == URL(fileURLWithPath: name).lastPathComponent else { throw NotebookTransferError.invalidFile }
+        return try JSONDecoder().decode([MacStroke].self, from: Data(contentsOf: directory.appendingPathComponent(name)))
+    }
+    static func write(_ strokes: [MacStroke], name: String, directory: URL) throws {
+        guard name == URL(fileURLWithPath: name).lastPathComponent else { throw NotebookTransferError.invalidFile }
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try JSONEncoder().encode(strokes).write(to: directory.appendingPathComponent(name), options: .atomic)
+    }
     static func loadForExport(from fileName: String) throws -> [MacStroke] {
         do {
             let data = try Data(contentsOf: DrawingStorage.urlForReading(fileName))

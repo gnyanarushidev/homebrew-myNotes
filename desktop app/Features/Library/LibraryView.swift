@@ -107,13 +107,10 @@ struct LibraryView: View {
         if selection == notebook.id {
             selection = nil
         }
-        for page in notebook.pages {
-            if let name = page.drawingFileName {
-                DrawingStorage.deleteDrawing(named: name)
-            }
-        }
+        let drawings = notebook.pages.compactMap(\.drawingFileName)
         modelContext.delete(notebook)
-        try? modelContext.save()
+        do { try modelContext.save(); drawings.forEach(DrawingStorage.deleteDrawing) }
+        catch { modelContext.rollback() }
     }
 }
 

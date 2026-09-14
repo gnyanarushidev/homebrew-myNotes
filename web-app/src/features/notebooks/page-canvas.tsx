@@ -8,7 +8,7 @@ import styles from "./notebook-editor.module.css";
 
 export type EditorTool = Tool | "text";
 export type Selection = { pageId: string; ids: string[] };
-type Props = { page: NotePage; index: number; zoom: number; template: Template; paperColor: PaperColor; tool: EditorTool; color: string; width: number; opacity: number; selection: Selection; select: (selection: Selection) => void; commit: (strokes: Stroke[]) => void; text: (value: string) => void; focus: () => void };
+type Props = { page: NotePage; index: number; zoom: number; template: Template; paperColor: PaperColor; tool: EditorTool; color: string; width: number; opacity: number; selection: Selection; select: (selection: Selection) => void; commit: (strokes: Stroke[]) => void; text: (value: string) => void; focus: () => void; editing: (active: boolean) => void };
 type Gesture = { pointer: number; mode: "ink" | "erase" | "lasso" | "move" | "resize" | "rotate"; first: Point; last: Point; points: Point[]; original: Stroke[]; strokes: Stroke[]; stroke?: Stroke; bounds?: ReturnType<typeof boundsFor>; selected: Set<string> };
 
 const StrokeInk = memo(function StrokeInk({ stroke }: { stroke: Stroke }) {
@@ -17,10 +17,11 @@ const StrokeInk = memo(function StrokeInk({ stroke }: { stroke: Stroke }) {
   return <Line points={points.flatMap(p => [p.x, p.y])} stroke={inkColor(stroke)} strokeWidth={stroke.width} opacity={stroke.opacity} lineCap="round" lineJoin="round" listening={false} perfectDrawEnabled={false} />;
 });
 
-export default function PageCanvas({ page, index, zoom, template, paperColor, tool, color, width, opacity, selection, select, commit, text, focus }: Props) {
+export default function PageCanvas({ page, index, zoom, template, paperColor, tool, color, width, opacity, selection, select, commit, text, focus, editing }: Props) {
   const size = dimensions(page.size), scale = zoom / 100;
   const wrapper = useRef<HTMLDivElement>(null);
   const gesture = useRef<Gesture | null>(null);
+  useEffect(() => () => { if (gesture.current) { gesture.current = null; editing(false); } }, [editing]);
   const [preview, setPreview] = useState<{ strokes: Stroke[]; lasso?: Point[] } | null>(null);
   const [visible, setVisible] = useState(index < 2);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -61,6 +62,7 @@ export default function PageCanvas({ page, index, zoom, template, paperColor, to
     if (mode === "ink" || mode === "erase") select({ pageId: page.id, ids: [] });
     const stroke: Stroke | undefined = mode === "ink" ? { id: crypto.randomUUID(), tool: tool as Stroke["tool"], geometry: "polyline", points: [p], color, width, opacity } : undefined;
     gesture.current = { pointer: event.pointerId, mode, first: p, last: p, points: [p], original: page.strokes, strokes: page.strokes, stroke, bounds: bounds ?? undefined, selected: ids };
+    editing(true);
     move(event);
   }
   function move(event: PointerEvent<HTMLDivElement>) {
@@ -106,6 +108,7 @@ export default function PageCanvas({ page, index, zoom, template, paperColor, to
       } else if (g.strokes !== g.original && g.strokes.length <= 20000) commit(g.strokes);
     }
     setPreview(null);
+    editing(false);
   }
   const imageScale = image ? Math.min((size.width - 100) / image.width, (size.height - 120) / image.height) : 1;
   return <div ref={wrapper} className={styles.paper} style={{ width: size.width * scale, height: size.height * scale, cursor: tool === "hand" ? "grab" : tool === "text" ? "text" : "crosshair", touchAction: tool === "hand" || tool === "text" ? "auto" : "none" }} role="application" aria-label={`Drawing page ${index + 1}`} tabIndex={0} data-page-id={page.id} data-stroke-count={page.strokes.length} onPointerDown={down} onPointerMove={move} onPointerUp={event => finish(event)} onPointerCancel={event => finish(event, true)} onLostPointerCapture={event => finish(event, true)}>

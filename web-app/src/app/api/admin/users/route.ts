@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     const auth = await authorized(request, true);
     return auth.finish(apiJson((await listAccounts()).map(accountSummary)));
-  } catch (error) { return apiFailure(error); }
+  } catch (error) { return apiFailure(error, request); }
 }
 
 export async function POST(request: NextRequest) {
@@ -46,5 +46,5 @@ export async function POST(request: NextRequest) {
       if (mailError) throw new HttpError(503, "Access was granted, but the setup email failed. Use Invite again to resend it.");
     }
     return auth.finish(apiJson({ message: "Invitation sent. The user can verify their email and set a password or use Google with the same address." }));
-  } catch (error) { return apiFailure(error); }
+  } catch (error) { return apiFailure(error, request); }
 }

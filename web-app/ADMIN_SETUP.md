@@ -16,7 +16,7 @@ ADMIN_EMAIL=YOUR_ADMIN_EMAIL
 
 Use the same Supabase project and admin email as your local configuration. `APP_URL` must match the exact origin you use in the browser, including the port for local development. Authentication mutations reject requests from other origins.
 
-Before opening notebooks, run the complete [`supabase/migrations/001_notebooks.sql`](supabase/migrations/001_notebooks.sql) file in **Supabase → SQL Editor**. It creates the notebook table, derived library/search columns, index, and default-deny row-level security. Only the server service role accesses the table, with explicit ownership checks in every API query.
+Before opening notebooks, apply the existing [`001_notebooks.sql`](supabase/migrations/001_notebooks.sql) migration if needed, then the complete [`002_cloud_storage.sql`](supabase/migrations/002_cloud_storage.sql) file in **Supabase → SQL Editor**. The new store contains metadata only; drawing JSON and images live in B2. Configure all B2 server variables from `.env.example` in Vercel. Full desktop-first architecture and operational setup are in the single authoritative [PROJECT_PLAN.md](../PROJECT_PLAN.md).
 
 `SUPABASE_SECRET_KEY` is now required in the deployed server environment for user management, member recovery eligibility, and notebook operations. Keep it server-only. Redeploy and open `/login`; `/admin` manages real invitations and `/notebooks` opens the signed-in account's library. `/preview/admin` redirects to `/admin`.
 
@@ -99,9 +99,11 @@ The dashboard includes password changes, logout, your notebook library, account 
 
 Admission grants currently live in protected Supabase app metadata. Email-link expiration is enforced by Supabase; independent invitation expiry and acceptance/audit history are a later account increment. Verify SMTP delivery and Google identity linking on your configured project before onboarding users.
 
-The web editor includes cloud-backed drawing, selection/transforms, text, paper settings, and PDF/JSON export. Import existing local Mac notebooks using **Export for web (.json)** in the updated Mac app and the web sidebar's import button. See [`NOTEBOOK_TRANSFER.md`](NOTEBOOK_TRANSFER.md). Automatic desktop sign-in/sync follows the separate [desktop authentication plan](../DESKTOP_AUTH_PLAN.md).
+The web editor includes cloud-backed drawing, selection/transforms, text, paper settings, and PDF/JSON export. The Mac app now includes automatic account synchronization and **Import existing local notebooks**. Portable export/import remains available through [`NOTEBOOK_TRANSFER.md`](NOTEBOOK_TRANSFER.md). All implementation and activation details are consolidated in [PROJECT_PLAN.md](../PROJECT_PLAN.md).
 
 ## Google sign-in
+
+For the native Mac app, also add `mynotes://auth/callback?state=*` to Supabase's allowed redirects. The native app uses `ASWebAuthenticationSession` and PKCE, stores admitted sessions in Keychain, and calls the same verified account/notebook API using bearer credentials.
 
 Google sign-in also works for the configured administrator once the Google provider is enabled in Supabase. Use the Supabase-provided callback in Google Cloud:
 

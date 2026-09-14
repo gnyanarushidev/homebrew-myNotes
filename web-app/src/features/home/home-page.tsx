@@ -6,7 +6,7 @@ import styles from "./home-page.module.css";
 const features: { icon: IconName; title: string; text: string; label: string }[] = [
   { icon: "pen", title: "Room to think", text: "Paper that fits your ideas. A familiar notebook space for writing, sketching, and connecting the dots.", label: "Editor layout available" },
   { icon: "lock", title: "A space of your own", text: "A personal workspace, with invited accounts and a private notebook library.", label: "Invited-user sign-in available" },
-  { icon: "monitor", title: "At your desk. On the go.", text: "The plan: one library on the web and Mac, with offline editing that catches up when you reconnect.", label: "Desktop sync planned" },
+  { icon: "monitor", title: "At your desk. On the go.", text: "One account on the web and Mac, with local desktop notebooks and cloud changes that catch up after reconnecting.", label: "Mac sign-in and cloud sync" },
 ];
 
 export function HomePage() {

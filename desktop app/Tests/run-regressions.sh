@@ -11,6 +11,10 @@ if [[ "${1:-}" == "--transfer" ]]; then
     HARNESS="$ROOT/Tests/TransferRegression.swift"
     shift
 fi
+if [[ "${1:-}" == "--cloud" ]]; then
+    HARNESS="$ROOT/Tests/CloudRegression.swift"
+    shift
+fi
 TEMP_ROOT="${MYNOTES_TEST_TEMP_ROOT:-${TMPDIR:-/tmp}}"
 test -d "$TEMP_ROOT"
 RUN_DIR="$(mktemp -d "$TEMP_ROOT/notebook-regressions.XXXXXX")"
@@ -31,6 +35,10 @@ swiftc -parse-as-library -module-name NotebookRegression \
     "$ROOT/Drawing/DrawingStorage/NotebookTransfer.swift" \
     "$ROOT/Core/Storage/FileStore.swift" \
     "$ROOT/Core/Persistence/DataController.swift" \
+    "$ROOT/Core/Cloud/CloudModels.swift" \
+    "$ROOT/Core/Cloud/CloudSession.swift" \
+    "$ROOT/Core/Cloud/DesktopSyncEngine.swift" \
+    "$ROOT/App/AccountRootView.swift" \
     "$ROOT/Features/Library/LibraryView.swift" \
     "$ROOT/Features/Editor/EditorView.swift" \
     "$ROOT/Features/Notebook/NotebookView.swift" \

@@ -3,6 +3,10 @@ import SwiftData
 
 @main
 struct MyNotesApp: App {
+#if os(macOS)
+    @StateObject private var session = CloudSession()
+    var body: some Scene { WindowGroup { AccountRootView(session: session) } }
+#else
     private let container: ModelContainer
 
     init() {
@@ -15,4 +19,5 @@ struct MyNotesApp: App {
         }
         .modelContainer(container)
     }
+#endif
 }

@@ -26,10 +26,17 @@ export function NotebookLibrary({ onNavigate }: { onNavigate: () => void }) {
   const [color, setColor] = useState<PaperColor>("white");
   const [size, setSize] = useState<PageSize>("letterPortrait");
   const [busy, setBusy] = useState(false);
+  const [legacy, setLegacy] = useState(false);
+  const [storageBytes, setStorageBytes] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<NotebookSummary | null>(null);
   const pendingCreation = useRef({ id: "", mutationId: "" });
   const pendingImport = useRef({ file: "", id: "", mutationId: "" });
   const file = useRef<HTMLInputElement>(null);
+  useEffect(() => { void api<{ available: boolean }>("/api/v1/sync/legacy").then(result => setLegacy(result.available)).catch(() => undefined); }, []);
+  useEffect(() => {
+    const load = () => { void api<{ storedBytes: number }>("/api/v1/sync/usage").then(result => setStorageBytes(result.storedBytes)).catch(() => undefined); };
+    load(); const timer = setInterval(load, 60000); return () => clearInterval(timer);
+  }, []);
   useEffect(() => {
     const controller = new AbortController();
     const timeout = setTimeout(() => {
@@ -63,7 +70,7 @@ export function NotebookLibrary({ onNavigate }: { onNavigate: () => void }) {
     if (!deleting) return;
     setBusy(true); setError("");
     try {
-      const record = await api<NotebookRecord>(`/api/notebooks/${deleting.id}`);
+      const record = await api<{ revision: number }>(`/api/v1/sync/notebooks/${deleting.id}`);
       await api(`/api/notebooks/${deleting.id}`, { method: "DELETE", body: JSON.stringify({ revision: record.revision }) });
       setDeleting(null); setRefresh(value => value + 1);
       if (pathname === `/notebooks/${deleting.id}`) router.push("/notebooks");
@@ -72,7 +79,7 @@ export function NotebookLibrary({ onNavigate }: { onNavigate: () => void }) {
   }
   const visible = [...notebooks].sort((a, b) => sort === "title" ? a.title.localeCompare(b.title) : b.updated_at.localeCompare(a.updated_at));
   return <>
-    <div className={styles.libraryActions}><button type="button" disabled={busy} title="New notebook" aria-label="New notebook" onClick={() => { pendingCreation.current = { id: "", mutationId: "" }; setCreating(true); }}><Icon name="plus" />New notebook</button><button type="button" disabled={busy} title="Import Mac notebook or JSON backup" aria-label="Import notebooks" onClick={() => file.current?.click()}><Icon name="export" /></button></div>
+    <div className={styles.libraryActions}><button type="button" disabled={busy} title="New notebook" aria-label="New notebook" onClick={() => { pendingCreation.current = { id: "", mutationId: "" }; setCreating(true); }}><Icon name="plus" />New notebook</button><button type="button" disabled={busy} title="Import Mac notebook or JSON backup" aria-label="Import notebooks" onClick={() => { pendingImport.current = { file: "", id: "", mutationId: "" }; file.current?.click(); }}><Icon name="export" /></button></div>
     <input ref={file} type="file" accept=".json" hidden onChange={async event => {
       const selected = event.target.files?.[0]; if (!selected) return;
       const input = event.currentTarget;
@@ -85,7 +92,7 @@ export function NotebookLibrary({ onNavigate }: { onNavigate: () => void }) {
         onNavigate(); router.push(`/notebooks/${record.id}`); setRefresh(value => value + 1);
       } catch (failure) { setError((failure as Error).message); } finally { setBusy(false); input.value = ""; }
     }} />
-    <label className={styles.search}><Icon name="search" width="15" /><input aria-label="Search notebooks" type="search" placeholder="Search notebooks and notes" value={query} onChange={e => setQuery(e.target.value)} /></label>
+    <label className={styles.search}><Icon name="search" width="15" /><input aria-label="Search notebooks" type="search" placeholder="Search notebook titles" value={query} onChange={e => setQuery(e.target.value)} /></label>
     <div className={styles.listHeading}><span>NOTEBOOKS</span><select aria-label="Sort notebooks" value={sort} onChange={e => setSort(e.target.value)}><option value="recent">Recent</option><option value="title">Name</option></select></div>
     {error && <p role="alert" className={ui.errorMessage}>{error} <button type="button" onClick={() => setRefresh(v => v + 1)}>Retry</button></p>}
     {loading && <p className={styles.hint}>Loading library…</p>}
@@ -95,6 +102,12 @@ export function NotebookLibrary({ onNavigate }: { onNavigate: () => void }) {
       <button type="button" onClick={() => setDeleting(notebook)} aria-label={`Delete ${notebook.title}`}><Icon name="trash" width="14" /></button>
     </div>)}</nav>
     <p className={styles.hint} role="status">{busy ? "Saving…" : `${visible.length} notebooks · Cloud library`}</p>
+    {storageBytes !== null && <p className={styles.hint} title="Registered B2 files, including the previous version; excludes temporary staging uploads.">B2 files: {(storageBytes / 1_000_000).toFixed(2)} MB</p>}
+    {legacy && <Button variant="ghost" disabled={busy} onClick={async () => {
+      setBusy(true); setError("");
+      try { let more = true; while (more) { const result = await api<{ more: boolean }>("/api/v1/sync/legacy", { method: "POST", body: "{}" }); more = result.more; } setLegacy(false); setRefresh(value => value + 1); }
+      catch (failure) { setError((failure as Error).message); } finally { setBusy(false); }
+    }}>Move older cloud notebooks to B2</Button>}
     <Dialog open={creating} title="New notebook" onClose={() => !busy && setCreating(false)}><form className={styles.dialogForm} onSubmit={create}>
       <label className={ui.field}>Notebook name<input className={ui.input} required maxLength={120} value={title} onChange={e => setTitle(e.target.value)} placeholder="Untitled Notebook" /></label>
       <label className={ui.field}>Paper template<select className={ui.input} value={template} onChange={e => setTemplate(e.target.value as Template)}>{templates.map(value => <option key={value}>{value}</option>)}</select></label>

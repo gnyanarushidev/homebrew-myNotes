@@ -59,7 +59,7 @@ test("notebooks persist text, pages, paper overrides, and JSON backups across re
   const backup = Buffer.concat(chunks);
   expect(JSON.parse(backup.toString())).toMatchObject({ schemaVersion: 1, title: "Weekend sketches", pages: [{ text: "A searchable thought about mountains." }, { size: "a4Portrait" }] });
   await page.getByRole("navigation", { name: "Workspace navigation" }).getByRole("link", { name: "Notebooks", exact: true }).click();
-  await page.getByRole("searchbox", { name: "Search notebooks" }).fill("mountains");
+  await page.getByRole("searchbox", { name: "Search notebooks" }).fill("Weekend");
   await expect(page.getByRole("link", { name: /Weekend sketches/ })).toBeVisible();
   await page.getByRole("searchbox", { name: "Search notebooks" }).fill("missing");
   await expect(page.getByRole("heading", { name: "No matching notebooks" })).toBeVisible();
@@ -79,12 +79,12 @@ test("an interrupted save recovers locally and preserves a newer cloud version a
   await page.goto(`/notebooks/${id}`);
   await page.getByRole("button", { name: "Text", exact: true }).click();
   await expect(page.getByLabel("Page 1 text")).toBeVisible();
-  await page.route("**/api/notebooks/*", route => route.request().method() === "PUT" ? route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "Simulated interrupted save" }) }) : route.continue());
+  await page.route("**/api/v1/sync/commit", route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "Simulated interrupted save" }) }));
   await page.getByLabel("Page 1 text").fill("Keep this local work.");
   await expect(page.getByRole("alert").filter({ hasText: "Simulated interrupted save" })).toBeVisible();
   const cloud = { ...document, title: "Newer cloud version" };
   expect((await context.request.put(`/api/notebooks/${id}`, { headers: mutationHeaders, data: { id, document: cloud, revision: record.revision, mutationId: crypto.randomUUID() } })).status()).toBe(200);
-  await page.unroute("**/api/notebooks/*");
+  await page.unroute("**/api/v1/sync/commit");
   page.on("dialog", dialog => dialog.accept());
   await page.reload();
   await page.getByRole("button", { name: "Text", exact: true }).click();

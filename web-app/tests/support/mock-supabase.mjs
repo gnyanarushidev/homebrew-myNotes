@@ -1,6 +1,7 @@
 // Test-only HTTP fixture. Production authentication always talks to configured Supabase.
 import { createServer } from "node:http";
 import { createHash, randomUUID } from "node:crypto";
+import { addCloudUser, cloudRequest, resetCloud } from "./cloud-fixture.mjs";
 
 const appOrigin = "http://127.0.0.1:3101";
 const initialUsers = {
@@ -42,8 +43,11 @@ function emailLink(type, redirect = `${appOrigin}/auth/callback?next=%2Freset-pa
 const server = createServer(async (request, response) => {
   const url = new URL(request.url, "http://127.0.0.1:54329");
   const send = (status, body) => { response.writeHead(status, { "Content-Type": "application/json" }); response.end(JSON.stringify(body)); };
-  let raw = "";
-  for await (const chunk of request) raw += chunk;
+  const chunks = [];
+  for await (const chunk of request) chunks.push(chunk);
+  const buffer = Buffer.concat(chunks);
+  if (await cloudRequest(request, response, url, buffer)) return;
+  const raw = buffer.toString("utf8");
   let body = {};
   try { if (raw) body = JSON.parse(raw); } catch { return send(400, { message: "Invalid JSON" }); }
 
@@ -51,6 +55,7 @@ const server = createServer(async (request, response) => {
     password = "initial-password";
     oauthUser = "admin";
     users = structuredClone(initialUsers); notebooks.clear();
+    await resetCloud(Object.values(users).map(user => user.id));
     sessions.clear(); refreshTokens.clear(); rotatedTokens.clear(); codes.clear(); emails.length = 0;
     return send(200, { ok: true });
   }
@@ -118,6 +123,7 @@ const server = createServer(async (request, response) => {
     let user = Object.values(users).find(user => user.email === body.email);
     user ??= users[body.email] = { id: randomUUID(), email: body.email, aud: "authenticated", role: "authenticated", app_metadata: {}, user_metadata: {}, created_at: new Date().toISOString() };
     user.invited_at = new Date().toISOString();
+    await addCloudUser(user.id);
     emails.push({ type: "invite", email: body.email, url: emailLink("invite", url.searchParams.get("redirect_to") ?? undefined, user) });
     return send(200, user);
   }
