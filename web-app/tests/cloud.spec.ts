@@ -21,6 +21,7 @@ test("native bearer admission, signed page transfer, and metadata-only publicati
   const authorization = `Bearer ${session.access_token}`;
   expect((await request.get("/api/v1/account", { headers: { Authorization: authorization } })).status()).toBe(200);
   expect((await context.request.get("/api/v1/account", { headers: { Authorization: "Bearer forged" } })).status()).toBe(401);
+  expect((await context.request.get("/api/v1/account", { headers: { "X-MyNotes-Account": crypto.randomUUID() } })).status()).toBe(403);
   const operationId = crypto.randomUUID(), id = crypto.randomUUID();
   const { file, ticket, bytes } = await upload(request, authorization, operationId, "This text belongs in B2, not a database drawing column.");
   const data = { id, operationId, baseRevision: 0, manifest: manifest(file), keepBoth: true };

@@ -46,7 +46,7 @@ The implementation keeps each live page's current file and one previous drawing/
 6. Reads authorize metadata first, then issue object-specific signed GET URLs. Bucket/application credentials remain server-only.
 7. Cleanup serializes with manifest commits and checks current/previous/conflict references before marking/deleting an object. Remove staging leftovers separately after upload expiry.
 
-The first implementation reconciles whole-notebook revisions while transferring page files independently. More granular independent-page merging remains a later optimization. Account change sequences are serialized in Postgres; polling does not rely on device clocks.
+Publication uses whole-notebook compare-and-swap revisions while transferring page files independently. Clients perform a three-way merge against the last acknowledged document before treating stale revisions as conflicts. Independent page/stroke additions, deletions and metadata changes merge; incompatible edits to the same item preserve both versions. Account change sequences are serialized in Postgres; polling does not rely on device clocks.
 
 ## 5. Desktop architecture
 
@@ -162,7 +162,7 @@ Desktop configuration should use the deployed API origin; the public configurati
 - Mac sync runs on opening the account, foreground, every 15 seconds and **Sync now**. Periodic attempts recover connectivity automatically. Incoming content waits for active drawing gestures and protects pending local snapshots.
 - Web cloud refresh runs on foreground/every 15 seconds while clean; unfinished gestures and dirty drafts are protected. New remote content invalidates stale local undo history.
 - Global web search currently searches notebook titles. Page text stays in B2; Mac search can still search downloaded page text locally.
-- Sync uses whole-notebook conflict copies with independently transferred page files. Deleted notebooks keep small tombstones; deleted file content becomes cleanup-eligible once unreferenced.
+- Clients merge non-overlapping changes using stored baselines. Whole-notebook conflict copies are reserved for incompatible edits or an unavailable historical baseline. Deleted notebooks keep small tombstones; deleted file content becomes cleanup-eligible once unreferenced.
 - B2 usage shown in the clients covers registered canonical/history files, excluding transient staging uploads and unrelated legacy bucket files. The B2 console remains authoritative for total billed storage.
 - Compact operation receipts/tombstones are currently retained. A bounded retention/reconciliation protocol is a remaining scale milestone; there is no claim of unlimited use within the storage allowances.
 
@@ -183,9 +183,19 @@ Source implementation and local tests do not by themselves activate hosted datab
 - Live readiness: private B2 access and the applied browser CORS rule passed; the missing Supabase cloud metadata migration remains the activation blocker. Live Google/Keychain and real two-device synchronization must be checked after migration and deployment.
 - A temporary synthetic B2 object verified real gzip upload/download and exact-version deletion; its version was removed. This did not upload personal notebook contents. Canonical uploads reserve metadata first, so interrupted publication remains discoverable by cleanup.
 
+### Legacy import and false-conflict repair
+
+- The real legacy store contained 5 notebooks/24 pages. Two notebooks had finite off-page coordinates beyond the provisional ±10,000 validation bound, causing import to stop before the rest could be imported.
+- Storage validation now preserves all finite coordinates; rendering still clips to the page. Source stores open read-only, migration continues past an individual failure, and the app reports found/imported/skipped/failed counts.
+- The corrected read-only inspection validated all 5 notebooks and 5,270 strokes. The original drawing files remain the source of truth during this repair.
+- Both clients merge independent changes by stable page/stroke IDs. The Mac persists complete acknowledged merge baselines and rebased pending operations, checks operation receipts before retrying, and preserves edits made while a merged upload is in flight.
+- The browser persists rebased drafts and no longer treats an optional post-commit metadata-read failure as a failed save. Requests are bound to the account that started them.
+- Added regressions for concurrent stroke additions without copies/echoes, metadata merging, lost merged acknowledgements, off-page legacy coordinates and partial-import reporting. Live activation/repair results are recorded after deployment.
+- Optional local diagnosis: `bash "desktop app/Tests/run-regressions.sh" --inspect-store <store-path> <drawing-directory>` reads counts and validation results without modifying the source.
+
 ## 9. Later milestones
 
-- Independent-page merging and complete web/Mac synchronization release checks.
+- Complete web/Mac synchronization release checks, including extended offline sessions and additional merge cases.
 - Bounded synchronization/operation retention with explicit stale-device reconciliation.
 - Large assets/staged imports beyond the initial measured page limits.
 - Full-text search strategy that does not duplicate drawing payloads in Postgres.

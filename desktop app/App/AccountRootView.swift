@@ -40,11 +40,12 @@ private struct AccountWorkspaceView: View {
                 VStack(alignment: .leading) { Text(engine.account.email).font(.caption); Text(engine.status).font(.caption2).foregroundStyle(.secondary) }
                 if let bytes = engine.storageBytes { Text("B2 files: \(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file))").font(.caption2).foregroundStyle(.secondary) }
                 Spacer()
-                Button("Import existing local notebooks") { importing = true }
+                Button(engine.importing ? "Importing…" : "Import existing local notebooks") { importing = true }.disabled(engine.importing)
                 Button("Sync now") { Task { try? await engine.synchronize() } }.disabled(engine.running)
                 Button("Sign out") { Task { await session.signOut() } }
             }.padding(10).disabled(session.signingOut)
             if !engine.lastError.isEmpty { Text(engine.lastError).font(.caption).foregroundStyle(.red).textSelection(.enabled).padding(6) }
+            if !engine.migrationSummary.isEmpty { Text(engine.migrationSummary).font(.caption).textSelection(.enabled).padding(6) }
             Divider()
             LibraryView().modelContainer(engine.container).disabled(session.signingOut)
         }

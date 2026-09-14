@@ -40,6 +40,10 @@ private final class ObjectProtocol: URLProtocol {
     var loseNextCommitReply = false
     init(owner: String) { self.owner = owner }
     func call(_ path: String, _ method: String, _ data: Data?) async throws -> Data {
+        if path.hasPrefix("/api/v1/sync/operations/") {
+            guard let receipt = receipts[String(path.dropFirst("/api/v1/sync/operations/".count))] else { throw CloudError.http(404, "No receipt") }
+            return try CloudCodec.encode(receipt)
+        }
         if path == "/api/v1/sync/cleanup" { return Data("{}".utf8) }
         if path == "/api/v1/sync/files" { return data! }
         if path == "/api/v1/sync/uploads" {
@@ -53,7 +57,7 @@ private final class ObjectProtocol: URLProtocol {
             var id = request.id, manifest = request.manifest, conflict = false
             let current = records[id]
             if (current?.revision ?? 0) != request.baseRevision || (current?.deleted == true && !request.deleted) {
-                if request.deleted { throw CloudError.http(409, "Revision conflict") }
+                if request.deleted || !request.keepBoth { throw CloudError.http(409, "Revision conflict") }
                 conflict = true; id = CloudCodec.stableID("\(owner):\(request.operationId):conflict")
                 manifest.title = "\(manifest.title.prefix(100)) (conflict copy)"
                 manifest.pages = manifest.pages.map { page in var next = page; next.id = CloudCodec.stableID("\(id):\(page.id)"); return next }
@@ -109,6 +113,33 @@ private final class ObjectProtocol: URLProtocol {
         }
         expect(try CloudCodec.encode(snapshot(b)) == CloudCodec.encode(document))
         print("PASS native upload, verified download, point/style/text/paper round-trip and independent stores")
+        func append(_ engine: DesktopSyncEngine, x: Double) throws {
+            let notebook = try engine.container.mainContext.fetch(FetchDescriptor<Notebook>()).first { $0.id.uuidString.lowercased() == id }!, page = notebook.pages[0]
+            var strokes = try MacDrawingStorage.read(from: page.drawingFileName!, directory: engine.directory)
+            strokes.append(MacStroke(points: [MacPoint(CGPoint(x: x, y: 250)), MacPoint(CGPoint(x: x + 10, y: 260))], tool: .pen, style: stroke.style))
+            try MacDrawingStorage.write(strokes, name: page.drawingFileName!, directory: engine.directory)
+            try engine.container.mainContext.save()
+        }
+        try append(a!, x: 310); try append(b, x: 410)
+        try await a!.synchronize(); try await b.synchronize(); try await a!.synchronize()
+        expect(cloud.records.count == 1)
+        expect(try snapshot(a!).pages[0].content.strokes.count == 3)
+        expect(try snapshot(b).pages[0].content.strokes.count == 3)
+        let mergedSequence = cloud.sequence
+        try await b.synchronize(); try await a!.synchronize(); try await b.synchronize()
+        expect(cloud.sequence == mergedSequence)
+        print("PASS simultaneous independent strokes merge on one page without copies or sync echoes")
+        let aNotebook = try a!.container.mainContext.fetch(FetchDescriptor<Notebook>()).first!
+        let bNotebook = try b.container.mainContext.fetch(FetchDescriptor<Notebook>()).first!
+        aNotebook.title = "Title from device A"; bNotebook.pageColor = .dark
+        try a!.container.mainContext.save(); try b.container.mainContext.save()
+        try await a!.synchronize(); cloud.loseNextCommitReply = true
+        do { try await b.synchronize(); preconditionFailure("Expected a lost merged acknowledgement") } catch is URLError { }
+        let mergedReceiptCount = cloud.receipts.count
+        try await b.synchronize(); try await a!.synchronize()
+        expect(cloud.receipts.count == mergedReceiptCount && cloud.records.count == 1)
+        expect(try snapshot(a!).title == "Title from device A" && snapshot(a!).color == "dark")
+        print("PASS metadata changes merge and a lost merged acknowledgement replays safely")
         func edit(_ engine: DesktopSyncEngine, x: Double) throws {
             let notebook = try engine.container.mainContext.fetch(FetchDescriptor<Notebook>()).first { $0.id.uuidString.lowercased() == id }!, page = notebook.pages[0]
             let changed = MacStroke(id: strokeID, points: [MacPoint(CGPoint(x: x, y: 150)), MacPoint(CGPoint(x: 200, y: 200))], tool: .pen, style: stroke.style)
@@ -178,6 +209,22 @@ private final class ObjectProtocol: URLProtocol {
             preconditionFailure("Another account opened the existing journal")
         } catch CloudError.message { }
         print("PASS account journal rejects a different account identity")
+        let farStroke = MacStroke(points: [MacPoint(CGPoint(x: 12500.125, y: -24000.5)), MacPoint(CGPoint(x: 100, y: 150))], tool: .pen, style: stroke.style)
+        expect(try SharedStroke(farStroke).native() == farStroke)
+        let farNotebook = Notebook(title: "Off-page legacy ink"), farPage = Page(drawingFileName: "off-page.drawing.json", hasDrawingContent: true)
+        farPage.notebook = farNotebook; farNotebook.pages = [farPage]; legacy.mainContext.insert(farNotebook); try legacy.mainContext.save()
+        try MacDrawingStorage.write([farStroke], name: "off-page.drawing.json", directory: sourceDirectory)
+        try await b.migrateLegacy(from: legacy, directory: sourceDirectory)
+        expect(try snapshot(b, farNotebook.id.uuidString.lowercased()).pages[0].content.strokes[0].points == farStroke.points)
+        print("PASS legacy off-page coordinates import and round-trip without clamping")
+        let broken = Notebook(title: "Missing source"), brokenPage = Page(drawingFileName: "missing.drawing.json", hasDrawingContent: true)
+        brokenPage.notebook = broken; broken.pages = [brokenPage]; legacy.mainContext.insert(broken)
+        let healthy = Notebook(title: "Healthy after failure"), healthyPage = Page()
+        healthyPage.notebook = healthy; healthy.pages = [healthyPage]; legacy.mainContext.insert(healthy); try legacy.mainContext.save()
+        do { try await b.migrateLegacy(from: legacy, directory: sourceDirectory); preconditionFailure("Expected a partial-import report") } catch CloudError.message { }
+        expect(cloud.records[healthy.id.uuidString.lowercased()] != nil)
+        expect(cloud.records[broken.id.uuidString.lowercased()] == nil && b.migrationSummary.contains("failed 1"))
+        print("PASS one bad legacy notebook cannot prevent other notebooks from importing and syncing")
         a?.stop(); b.stop()
     }
 }

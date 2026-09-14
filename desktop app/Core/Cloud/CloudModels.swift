@@ -13,8 +13,8 @@ struct CloudNotebook: Codable { let id: String; let manifest: CloudManifest; let
 struct CloudDownloads: Codable { let record: CloudNotebook; let urls: [String: String] }
 struct CloudChanges: Codable { let records: [CloudNotebook]; let cursor: Int; let more: Bool }
 struct CloudReceipt: Codable { let id: String; let revision: Int; let sequence: Int; let conflict: Bool; let deleted: Bool }
-struct CloudRGBA: Codable { let red: Double; let green: Double; let blue: Double; let alpha: Double }
-struct SharedStroke: Codable {
+struct CloudRGBA: Codable, Equatable { let red: Double; let green: Double; let blue: Double; let alpha: Double }
+struct SharedStroke: Codable, Equatable {
     let id: String; let tool: String; let points: [MacPoint]; let color: String
     let width: Double; let opacity: Double; let geometry: String?; let rgba: CloudRGBA?
     init(_ stroke: MacStroke) {
@@ -26,7 +26,7 @@ struct SharedStroke: Codable {
     }
     func native() throws -> MacStroke {
         guard let uuid = UUID(uuidString: id), let tool = MacDrawingTool(rawValue: tool), tool != .eraser, tool != .lasso,
-              !points.isEmpty, points.count <= 50_000, points.allSatisfy({ $0.x.isFinite && $0.y.isFinite && abs($0.x) <= 10_000 && abs($0.y) <= 10_000 }),
+              !points.isEmpty, points.count <= 50_000, points.allSatisfy({ $0.x.isFinite && $0.y.isFinite }),
               width.isFinite, (0.1...100).contains(width), opacity.isFinite, (0.01...1).contains(opacity) else { throw CloudError.invalidDocument }
         let rgb: CloudRGBA
         if let rgba { rgb = rgba }
@@ -51,9 +51,9 @@ struct SharedStroke: Codable {
         return MacStroke(id: uuid, points: path, tool: tool, style: MacStrokeStyle(red: rgb.red, green: rgb.green, blue: rgb.blue, alpha: rgb.alpha, width: width, opacity: opacity))
     }
 }
-struct SharedPageContent: Codable { var version = 1; let text: String; let strokes: [SharedStroke] }
-struct LocalCloudPage: Codable { var id: String; let size: String; let template: String; let color: String; let inheritsStyle: Bool; let content: SharedPageContent; let image: Data?; let imageKind: String? }
-struct LocalCloudDocument: Codable { var title: String; let template: String; let color: String; var pages: [LocalCloudPage] }
+struct SharedPageContent: Codable, Equatable { var version = 1; let text: String; let strokes: [SharedStroke] }
+struct LocalCloudPage: Codable, Equatable { var id: String; let size: String; let template: String; let color: String; let inheritsStyle: Bool; let content: SharedPageContent; let image: Data?; let imageKind: String? }
+struct LocalCloudDocument: Codable, Equatable { var title: String; let template: String; let color: String; var pages: [LocalCloudPage] }
 enum CloudError: LocalizedError {
     case message(String), http(Int, String), invalidDocument, invalidCallback, signedOut
     var errorDescription: String? {
@@ -86,7 +86,7 @@ enum CloudCodec {
             for stroke in strokes {
                 let style = stroke.style
                 guard !stroke.points.isEmpty, stroke.points.count <= 50_000, stroke.tool != .eraser, stroke.tool != .lasso,
-                      stroke.points.allSatisfy({ $0.x.isFinite && $0.y.isFinite && abs($0.x) <= 10_000 && abs($0.y) <= 10_000 }),
+                      stroke.points.allSatisfy({ $0.x.isFinite && $0.y.isFinite }),
                       [style.red, style.green, style.blue, style.alpha].allSatisfy({ $0.isFinite && (0...1).contains($0) }),
                       style.width.isFinite, (0.1...100).contains(style.width), style.opacity.isFinite, (0.01...1).contains(style.opacity) else { throw CloudError.invalidDocument }
             }

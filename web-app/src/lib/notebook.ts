@@ -11,7 +11,9 @@ export type Tool = typeof drawingTools[number];
 
 const finite = z.number().finite();
 export const rgbaSchema = z.object({ red: finite.min(0).max(1), green: finite.min(0).max(1), blue: finite.min(0).max(1), alpha: finite.min(0).max(1) });
-export const pointSchema = z.object({ x: finite.min(-10000).max(10000), y: finite.min(-10000).max(10000) });
+// Existing Mac drawings may contain off-page points. Preserve finite values;
+// page clipping belongs to the renderer, not the stored document validator.
+export const pointSchema = z.object({ x: finite, y: finite });
 export const strokeSchema = z.object({
   id: z.uuid(),
   tool: z.enum(["pen", "pencil", "highlighter", "rectangle", "circle", "line", "arrow"]),

@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { apiFailure, apiJson, authorized, HttpError, readJson } from "@/server/http";
-import { changes, cloudUsage, commitCloud, commitSchema, downloads, getCloud, legacyCount, listCloud, migrateLegacyCloud } from "@/server/cloud";
-import { cleanupObjects, publishFile, uploadURL } from "@/server/storage";
+import { changes, cloudUsage, commitCloud, commitSchema, downloads, getCloud, legacyCount, listCloud, migrateLegacyCloud, operationReceipt } from "@/server/cloud";
+import { cleanupObjects, fileURL, publishFile, uploadURL, verifyReferences } from "@/server/storage";
 import { fileSchema, MAX_ASSET_BYTES } from "@/lib/cloud";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +11,7 @@ type Context = { params: Promise<{ path?: string[] }> };
 export async function GET(request: NextRequest, context: Context) {
   try {
     const auth = await authorized(request); const { path = [] } = await context.params;
+    if (path[0] === "operations" && path.length === 2 && z.uuid().safeParse(path[1]).success) return auth.finish(apiJson(await operationReceipt(auth.user.id, path[1])));
     if (path.length === 1 && path[0] === "legacy") return auth.finish(apiJson(await legacyCount(auth.user.id)));
     if (path.length === 1 && path[0] === "usage") return auth.finish(apiJson(await cloudUsage(auth.user.id)));
     if (path.length === 0) {
@@ -28,6 +29,14 @@ export async function POST(request: NextRequest, context: Context) {
     const auth = await authorized(request); const { path = [] } = await context.params;
     if (path.length !== 1) throw new HttpError(404, "Unknown synchronization endpoint.");
     const body = await readJson(request, 500_000);
+    if (path[0] === "downloads") {
+      const input = z.object({ files: z.array(fileSchema).min(1).max(50) }).safeParse(body);
+      if (!input.success) throw new HttpError(400, "Invalid file descriptors.");
+      await verifyReferences(auth.user.id, input.data.files);
+      const urls: Record<string, string> = {};
+      for (const file of input.data.files) urls[file.key] = await fileURL(auth.user.id, file);
+      return auth.finish(apiJson({ urls }));
+    }
     if (path[0] === "files") {
       const input = z.object({ files: z.array(fileSchema).min(1).max(10) }).safeParse(body);
       if (!input.success) throw new HttpError(400, "Invalid file descriptors.");

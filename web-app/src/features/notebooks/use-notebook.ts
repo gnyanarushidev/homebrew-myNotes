@@ -6,6 +6,7 @@ import { loadCloudNotebook, saveCloudNotebook } from "@/lib/cloud-client";
 import { api, ApiError } from "@/lib/api";
 import { readDraft, writeDraft } from "@/lib/drafts";
 import { documentSchema, type NotebookDocument, type NotebookRecord } from "@/lib/notebook";
+import { mergeDocuments } from "@/lib/merge";
 
 export function useNotebook(userId: string, id: string) {
   const router = useRouter();
@@ -30,12 +31,13 @@ export function useNotebook(userId: string, id: string) {
     if (running.current || !dirty.current || !base.current || !current.current) return;
     running.current = true;
     const snapshot = current.current;
+    const previous = base.current;
     if (mutation.current.document !== snapshot) mutation.current = { id: crypto.randomUUID(), document: snapshot };
     const mutationId = mutation.current.id;
     if (mounted.current) { setStatus("Saving…"); setError(""); }
     try {
       await writeDraft(userId, id, { record: base.current, document: snapshot, mutationId, savedAt: Date.now(), conflictCopy: conflictCopy.current.id ? conflictCopy.current : undefined });
-      const record = await saveCloudNotebook(id, snapshot, base.current.revision, mutationId, base.current.storage);
+      const record = await saveCloudNotebook(id, snapshot, base.current.revision, mutationId, base.current.storage, userId);
       base.current = record;
       window.dispatchEvent(new Event("mynotes-library-change"));
       if (current.current === snapshot) {
@@ -46,6 +48,20 @@ export function useNotebook(userId: string, id: string) {
         await writeDraft(userId, id, { record, document: current.current, mutationId: crypto.randomUUID(), savedAt: Date.now() });
       }
     } catch (failure) {
+      if (failure instanceof ApiError && failure.status === 409) {
+        try {
+          const remote = await loadCloudNotebook(id, userId);
+          const merged = mergeDocuments(previous.document, snapshot, remote.document);
+          const latest = merged && current.current ? mergeDocuments(snapshot, current.current, merged) : null;
+          if (latest && !gestures.current) {
+            const mutationId = crypto.randomUUID();
+            base.current = remote; current.current = latest; mutation.current = { id: mutationId, document: latest };
+            if (mounted.current) { setDocument(latest); setConflict(false); setError(""); setStatus("Merged cloud changes · saving…"); setRemoteGeneration(value => value + 1); }
+            await writeDraft(userId, id, { record: remote, document: latest, mutationId, savedAt: Date.now() });
+            return; // finally schedules the merged snapshot; operation ID/base are durable.
+          }
+        } catch { /* The unchanged local draft remains recoverable. */ }
+      }
       if (mounted.current) {
         setStatus(navigator.onLine ? "Save needs attention" : "Offline · local draft");
         setError((failure as Error).message);
@@ -63,7 +79,7 @@ export function useNotebook(userId: string, id: string) {
     async function load() {
       const draft = await readDraft(userId, id).catch(() => undefined);
       try {
-        const record = await loadCloudNotebook(id);
+        const record = await loadCloudNotebook(id, userId);
         if (cancelled) return;
         const recovered = draft && draft.record.id === id && documentSchema.safeParse(draft.document).success;
         base.current = recovered ? draft.record : record;
@@ -91,11 +107,11 @@ export function useNotebook(userId: string, id: string) {
       if (cancelled || gestures.current || dirty.current || running.current || !base.current) return;
       const previous = base.current;
       try {
-        const remote = await api<{ revision: number; deleted: boolean }>(`/api/v1/sync/notebooks/${id}`);
+        const remote = await api<{ revision: number; deleted: boolean }>(`/api/v1/sync/notebooks/${id}`, { headers: { "X-MyNotes-Account": userId } });
         if (cancelled || gestures.current || dirty.current || base.current !== previous) return;
         if (remote.deleted) { setDocument(null); setError("This notebook was deleted on another device."); return; }
         if (remote.revision !== previous.revision) {
-          const record = await loadCloudNotebook(id);
+          const record = await loadCloudNotebook(id, userId);
           if (cancelled || gestures.current || dirty.current || base.current !== previous) return;
           base.current = record; current.current = record.document; setDocument(record.document); setStatus("Updated from cloud"); setError("");
           setRemoteGeneration(value => value + 1);
@@ -138,7 +154,7 @@ export function useNotebook(userId: string, id: string) {
     try {
       await writeDraft(userId, id, { record: base.current, document: current.current, mutationId: mutation.current.id, savedAt: Date.now(), conflictCopy: conflictCopy.current });
       const copy = { ...current.current, title: `${current.current.title.slice(0, 95)} (conflict copy)` };
-      const record = await saveCloudNotebook(conflictCopy.current.id, copy, 0, conflictCopy.current.mutationId);
+      const record = await saveCloudNotebook(conflictCopy.current.id, copy, 0, conflictCopy.current.mutationId, undefined, userId);
       await writeDraft(userId, record.id, { record, document: { ...current.current, title: copy.title }, mutationId: crypto.randomUUID(), savedAt: Date.now() });
       await writeDraft(userId, id);
       dirty.current = false;

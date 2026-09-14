@@ -89,7 +89,7 @@ export default function PageCanvas({ page, index, zoom, template, paperColor, to
           : g.mode === "resize" ? { x: box.x + (point.x - box.x) * Math.max(.05, (p.x - box.x) / box.width), y: box.y + (point.y - box.y) * Math.max(.05, (p.y - box.y) / box.height) }
             : { x: center.x + (point.x - center.x) * Math.cos(angle) - (point.y - center.y) * Math.sin(angle), y: center.y + (point.x - center.x) * Math.sin(angle) + (point.y - center.y) * Math.cos(angle) };
         const transformed = g.original.map(stroke => g.selected.has(stroke.id) ? transformStroke(stroke, transform) : stroke);
-        if (transformed.every(stroke => stroke.points.every(point => Math.abs(point.x) <= 10000 && Math.abs(point.y) <= 10000))) g.strokes = transformed;
+        if (transformed.every(stroke => stroke.points.every(point => Number.isFinite(point.x) && Number.isFinite(point.y)))) g.strokes = transformed;
       }
       g.last = p;
     }

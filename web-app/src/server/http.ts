@@ -18,6 +18,7 @@ export async function authorized(request: NextRequest, adminOnly = false) {
     const client = createEmailAuth(settings);
     const { data, error } = await client.auth.getUser(match[1]);
     if (error || !data.user) throw new HttpError(401, "Sign in to continue.");
+    if (request.headers.has("x-mynotes-account") && request.headers.get("x-mynotes-account") !== data.user.id) throw new HttpError(403, "The active account changed. Reopen the notebook.");
     if (!isAllowedAccount(data.user, settings) || (adminOnly && !isVerifiedAdmin(data.user, settings))) throw new HttpError(403, "This account does not have access.");
     nativeRequests.add(request);
     return { client, user: data.user, settings, finish: (response: NextResponse) => response };
@@ -26,6 +27,7 @@ export async function authorized(request: NextRequest, adminOnly = false) {
   responseFinish.set(request, auth.finish);
   const { data, error } = await auth.client.auth.getUser();
   if (error || !data.user) throw new HttpError(401, "Sign in to continue.");
+  if (request.headers.has("x-mynotes-account") && request.headers.get("x-mynotes-account") !== data.user.id) throw new HttpError(403, "The active account changed. Reopen the notebook.");
   if (!isAllowedAccount(data.user, settings) || (adminOnly && !isVerifiedAdmin(data.user, settings))) throw new HttpError(403, "This account does not have access.");
   return { ...auth, user: data.user, settings };
 }

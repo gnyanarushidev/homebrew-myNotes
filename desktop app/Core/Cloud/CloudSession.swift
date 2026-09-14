@@ -51,6 +51,7 @@ struct TokenResponse: Decodable {
     private var refreshTask: Task<NativeSession, Error>?
     private var oauth: ASWebAuthenticationSession?
     private var restored = false
+    private var launchImportStarted = false
     private var signOutKey: String { "MyNotes.SignedOut.\(CloudCodec.hash(Data(origin.utf8)))" }
 
     static func validatedOrigin(_ value: String) throws -> URL {
@@ -176,16 +177,35 @@ struct TokenResponse: Decodable {
     func api(_ path: String, method: String = "GET", body: Data? = nil) async throws -> Data {
         let attempt = generation
         do {
-            let token = try await token(); let data = try await request(URL(string: origin + path)!, method: method, headers: ["Authorization": "Bearer \(token)"], body: body)
+            let token = try await token(); guard attempt == generation else { throw CloudError.signedOut }
+            let data = try await request(URL(string: origin + path)!, method: method, headers: ["Authorization": "Bearer \(token)"], body: body)
             guard attempt == generation else { throw CloudError.signedOut }; return data
         } catch CloudError.http(let code, _) where code == 401 {
-            let token = try await token(force: true); let data = try await request(URL(string: origin + path)!, method: method, headers: ["Authorization": "Bearer \(token)"], body: body)
+            let token = try await token(force: true); guard attempt == generation else { throw CloudError.signedOut }
+            let data = try await request(URL(string: origin + path)!, method: method, headers: ["Authorization": "Bearer \(token)"], body: body)
             guard attempt == generation else { throw CloudError.signedOut }; return data
         }
     }
     private func openWorkspace(_ account: CloudAccount) throws {
-        let engine = try DesktopSyncEngine(account: account, origin: origin) { [weak self] path, method, body in guard let self else { throw CloudError.signedOut }; return try await self.api(path, method: method, body: body) }
+        let engine = try DesktopSyncEngine(account: account, origin: origin) { [weak self] path, method, body in guard let self, self.session?.account.id == account.id else { throw CloudError.signedOut }; return try await self.api(path, method: method, body: body) }
         workspace = engine; engine.start()
+        if CommandLine.arguments.contains("--import-existing-notebooks"), !launchImportStarted {
+            launchImportStarted = true
+            Task { [weak self, weak engine] in
+                guard let self, let engine, self.workspace === engine else { return }
+                var failure: String?
+                do { try await engine.migrateLegacy() } catch { failure = error.localizedDescription; self.error = error.localizedDescription }
+                self.writeMigrationReport(engine: engine, failure: failure)
+            }
+        }
+    }
+    private func writeMigrationReport(engine: DesktopSyncEngine, failure: String?) {
+        guard let index = CommandLine.arguments.firstIndex(of: "--migration-report"), CommandLine.arguments.indices.contains(index + 1) else { return }
+        let url = URL(fileURLWithPath: CommandLine.arguments[index + 1]).standardizedFileURL.resolvingSymlinksInPath()
+        let temp = FileManager.default.temporaryDirectory.standardizedFileURL.resolvingSymlinksInPath()
+        guard url.path.hasPrefix(temp.path + "/"), !FileManager.default.fileExists(atPath: url.path) else { return }
+        let report: [String: Any] = ["accountId": engine.account.id, "summary": engine.migrationSummary, "status": engine.status, "error": failure ?? "", "clean": (try? engine.isClean()) ?? false]
+        if let data = try? JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]) { try? data.write(to: url, options: .withoutOverwriting) }
     }
     func signOut(retainingWork: Bool = false) async {
         guard !signingOut else { return }; signingOut = true; error = ""; defer { signingOut = false }

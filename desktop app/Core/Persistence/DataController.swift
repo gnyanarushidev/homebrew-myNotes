@@ -9,7 +9,9 @@ enum DataController {
     }
     static func legacyContainer() throws -> ModelContainer {
         let schema = Schema([Notebook.self, Page.self])
-        return try ModelContainer(for: schema, configurations: [ModelConfiguration("MyNotes", schema: schema)])
+        let url = ModelConfiguration("MyNotes", schema: schema).url
+        guard FileManager.default.fileExists(atPath: url.path) else { throw CocoaError(.fileNoSuchFile, userInfo: [NSFilePathErrorKey: url.path]) }
+        return try ModelContainer(for: schema, configurations: [ModelConfiguration("MyNotes", schema: schema, url: url, allowsSave: false, cloudKitDatabase: .none)])
     }
     static func makeContainer() -> ModelContainer {
         let schema = Schema([Notebook.self, Page.self])

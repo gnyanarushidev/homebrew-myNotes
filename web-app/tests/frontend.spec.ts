@@ -82,7 +82,7 @@ test("an interrupted save recovers locally and preserves a newer cloud version a
   await page.route("**/api/v1/sync/commit", route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "Simulated interrupted save" }) }));
   await page.getByLabel("Page 1 text").fill("Keep this local work.");
   await expect(page.getByRole("alert").filter({ hasText: "Simulated interrupted save" })).toBeVisible();
-  const cloud = { ...document, title: "Newer cloud version" };
+  const cloud = { ...document, title: "Newer cloud version", pages: document.pages.map(page => ({ ...page, text: "Remote text edit" })) };
   expect((await context.request.put(`/api/notebooks/${id}`, { headers: mutationHeaders, data: { id, document: cloud, revision: record.revision, mutationId: crypto.randomUUID() } })).status()).toBe(200);
   await page.unroute("**/api/v1/sync/commit");
   page.on("dialog", dialog => dialog.accept());
@@ -95,7 +95,7 @@ test("an interrupted save recovers locally and preserves a newer cloud version a
   await expect(page.getByRole("status").filter({ hasText: "Saved to cloud" })).toBeVisible();
   const original = await (await context.request.get(`/api/notebooks/${id}`)).json();
   expect(original.document.title).toBe("Newer cloud version");
-  expect(original.document.pages[0].text).toBe("");
+  expect(original.document.pages[0].text).toBe("Remote text edit");
   const copies = await (await context.request.get("/api/notebooks")).json();
   expect(copies).toHaveLength(2);
 });

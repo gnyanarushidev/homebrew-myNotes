@@ -3,8 +3,8 @@ import Foundation
 import SwiftData
 import SwiftUI
 
-struct SyncBaseline: Codable { var revision: Int; var localHash: String; var manifest: CloudManifest?; var pageHashes: [String: String] }
-struct PendingCloudOperation: Codable { let id: String; let operationId: String; let baseRevision: Int; let document: LocalCloudDocument?; let deleted: Bool }
+struct SyncBaseline: Codable { var revision: Int; var localHash: String; var manifest: CloudManifest?; var pageHashes: [String: String]; var document: LocalCloudDocument? = nil }
+struct PendingCloudOperation: Codable { let id: String; let operationId: String; let baseRevision: Int; let document: LocalCloudDocument?; let deleted: Bool; var originalDocument: LocalCloudDocument? = nil; var keepBoth: Bool? = nil }
 struct SyncJournal: Codable {
     var accountId: String
     var cursor = 0
@@ -30,10 +30,13 @@ struct CloudUsage: Decodable { let storedBytes: Int64 }
     @Published var running = false
     @Published var availableOffline = false
     @Published var storageBytes: Int64?
+    @Published var importing = false
+    @Published var migrationSummary = ""
     private let api: (String, String, Data?) async throws -> Data
     private var journal: SyncJournal
     private var timer: Task<Void, Never>?
     private var flight: Task<Void, Error>?
+    private var flightID: UUID?
     private var stopped = false
     private var journalURL: URL { root.appendingPathComponent("sync-state.json") }
     private var migrationURL: URL { root.deletingLastPathComponent().appendingPathComponent("\(account.id).migration.json") }
@@ -73,6 +76,9 @@ struct CloudUsage: Decodable { let storedBytes: Int64 }
             journal.migrated = Array(Set(journal.migrated + (try JSONDecoder().decode([String].self, from: Data(contentsOf: migrationIndex)))))
         }
         FileStore.accountRoot = root
+        for id in Array(journal.baselines.keys) where journal.baselines[id]?.document == nil {
+            if let document = try? local(id), try digest(document) == journal.baselines[id]?.localHash { journal.baselines[id]?.document = document }
+        }
         try persist()
     }
     private func persist() throws { try CloudCodec.encode(journal).write(to: journalURL, options: .atomic) }
@@ -118,7 +124,7 @@ struct CloudUsage: Decodable { let storedBytes: Int64 }
     }
     func synchronize() async throws {
         if let flight { return try await flight.value }
-        guard !stopped else { return }
+        guard !stopped, !importing else { return }
         let task = Task { @MainActor in
             self.running = true; self.lastError = ""; self.status = "Synchronizing…"
             defer { self.running = false }
@@ -128,7 +134,9 @@ struct CloudUsage: Decodable { let storedBytes: Int64 }
                 throw error
             }
         }
-        flight = task; defer { flight = nil }; try await task.value
+        let id = UUID(); flightID = id; flight = task
+        defer { if flightID == id { flight = nil; flightID = nil } }
+        try await task.value
     }
     private func work() async throws -> Bool {
         try checkActive()
@@ -140,12 +148,12 @@ struct CloudUsage: Decodable { let storedBytes: Int64 }
             let id = notebook.id.uuidString.lowercased(), document = try CloudCodec.snapshot(notebook, directory: directory)
             if isEditing(id) { return false }
             if try digest(document) == journal.baselines[id]?.localHash { continue }
-            let pending = PendingCloudOperation(id: id, operationId: UUID().uuidString.lowercased(), baseRevision: journal.baselines[id]?.revision ?? 0, document: document, deleted: false)
+            let pending = PendingCloudOperation(id: id, operationId: UUID().uuidString.lowercased(), baseRevision: journal.baselines[id]?.revision ?? 0, document: document, deleted: false, originalDocument: document, keepBoth: false)
             journal.pending = pending; try persist(); try await send(pending)
         }
         let ids = Set(try notebooks().map { $0.id.uuidString.lowercased() })
         for id in Array(journal.baselines.keys) where !ids.contains(id) {
-            let pending = PendingCloudOperation(id: id, operationId: UUID().uuidString.lowercased(), baseRevision: journal.baselines[id]!.revision, document: nil, deleted: true)
+            let pending = PendingCloudOperation(id: id, operationId: UUID().uuidString.lowercased(), baseRevision: journal.baselines[id]!.revision, document: nil, deleted: true, keepBoth: false)
             journal.pending = pending; try persist(); try await send(pending)
         }
         var more = true
@@ -210,17 +218,71 @@ struct CloudUsage: Decodable { let storedBytes: Int64 }
         return manifest
     }
     private func send(_ pending: PendingCloudOperation) async throws {
-        var manifest = try await prepare(pending)
-        func commit() async throws -> CloudReceipt {
-            try JSONDecoder().decode(CloudReceipt.self, from: await api("/api/v1/sync/commit", "POST", CloudCodec.encode(CloudCommit(id: pending.id, operationId: pending.operationId, baseRevision: pending.baseRevision, manifest: manifest, deleted: pending.deleted, keepBoth: true))))
+        var operation = pending
+        for _ in 0..<3 {
+            try checkActive()
+            // Resolve a lost acknowledgement before changing an operation's base.
+            do {
+                let receipt = try JSONDecoder().decode(CloudReceipt.self, from: await api("/api/v1/sync/operations/\(operation.operationId)", "GET", nil))
+                try await acknowledge(operation, receipt: receipt); return
+            } catch CloudError.http(let code, _) where code == 404 { }
+            if !operation.deleted, operation.keepBoth == false, let document = operation.document {
+                let remote: (record: CloudNotebook, document: LocalCloudDocument)?
+                do { remote = try await fetch(operation.id) } catch CloudError.http(let code, _) where code == 404 { remote = nil }
+                try checkActive()
+                if let remote, try CloudMerge.normalized(document) == CloudMerge.normalized(remote.document) {
+                    try await acknowledge(operation, receipt: CloudReceipt(id: remote.record.id, revision: remote.record.revision, sequence: remote.record.change_seq, conflict: false, deleted: false)); return
+                }
+                if let remote, remote.record.revision != operation.baseRevision {
+                    let base = try await mergeBase(operation.id)
+                    let merged = base.flatMap { try? CloudMerge.merge(base: $0, local: document, remote: remote.document) }
+                    if let merged {
+                        operation = PendingCloudOperation(id: operation.id, operationId: UUID().uuidString.lowercased(), baseRevision: remote.record.revision, document: merged, deleted: false, originalDocument: operation.originalDocument ?? document, keepBoth: false)
+                        journal.baselines[operation.id] = SyncBaseline(revision: remote.record.revision, localHash: try digest(remote.document), manifest: remote.record.manifest, pageHashes: try pageHashes(remote.document), document: remote.document)
+                    } else {
+                        operation = PendingCloudOperation(id: operation.id, operationId: UUID().uuidString.lowercased(), baseRevision: operation.baseRevision, document: document, deleted: false, originalDocument: operation.originalDocument ?? document, keepBoth: true)
+                    }
+                } else if remote == nil && operation.baseRevision > 0 {
+                    operation = PendingCloudOperation(id: operation.id, operationId: UUID().uuidString.lowercased(), baseRevision: operation.baseRevision, document: document, deleted: false, originalDocument: operation.originalDocument ?? document, keepBoth: true)
+                } else if let remote, journal.baselines[operation.id]?.document == nil {
+                    journal.baselines[operation.id]?.document = remote.document
+                }
+                journal.pending = operation; try persist()
+            }
+            var manifest = try await prepare(operation)
+            func commit() async throws -> CloudReceipt {
+                try JSONDecoder().decode(CloudReceipt.self, from: await api("/api/v1/sync/commit", "POST", CloudCodec.encode(CloudCommit(id: operation.id, operationId: operation.operationId, baseRevision: operation.baseRevision, manifest: manifest, deleted: operation.deleted, keepBoth: operation.keepBoth ?? true))))
+            }
+            do {
+                let receipt: CloudReceipt
+                do { receipt = try await commit() }
+                catch CloudError.http(let code, _) where code == 410 { manifest = try await prepare(operation, forceUpload: true); receipt = try await commit() }
+                try await acknowledge(operation, receipt: receipt); return
+            } catch CloudError.http(let code, _) where code == 409 && operation.deleted {
+                let remote = try await fetch(operation.id); try checkActive(); try adopt(remote.document, record: remote.record)
+                journal.pending = nil; try persist(); status = "A newer cloud notebook was restored instead of deleted."; return
+            } catch CloudError.http(let code, _) where code == 409 && operation.keepBoth == false {
+                continue // Another device committed during the upload; rebase again.
+            }
         }
-        let receipt: CloudReceipt
-        do { receipt = try await commit() }
-        catch CloudError.http(let code, _) where code == 410 { manifest = try await prepare(pending, forceUpload: true); receipt = try await commit() }
-        catch CloudError.http(let code, _) where code == 409 && pending.deleted {
-            let remote = try await fetch(pending.id); try checkActive(); try adopt(remote.document, record: remote.record)
-            journal.pending = nil; try persist(); status = "A newer cloud notebook was restored instead of deleted."; return
-        }
+        throw CloudError.message("The notebook is changing on another device. Local work is retained; retry sync shortly.")
+    }
+    private func mergeBase(_ id: String) async throws -> LocalCloudDocument? {
+        guard let baseline = journal.baselines[id] else { return nil }
+        if let document = baseline.document { return document }
+        guard let manifest = baseline.manifest else { return nil }
+        do {
+            struct URLs: Decodable { let urls: [String: String] }
+            let files = manifest.pages.flatMap { page in [page.content] + (page.image.map { [$0] } ?? []) }
+            var urls: [String: String] = [:]
+            for offset in stride(from: 0, to: files.count, by: 50) {
+                let result = try JSONDecoder().decode(URLs.self, from: await api("/api/v1/sync/downloads", "POST", CloudCodec.encode(FinalizedFiles(files: Array(files[offset..<min(offset + 50, files.count)])))))
+                urls.merge(result.urls) { _, new in new }
+            }
+            return try await decodeDocument(manifest, urls: urls)
+        } catch CloudError.http(let code, _) where [404, 410].contains(code) { return nil }
+    }
+    private func acknowledge(_ pending: PendingCloudOperation, receipt: CloudReceipt) async throws {
         try checkActive()
         if receipt.deleted { journal.baselines.removeValue(forKey: pending.id) }
         else if receipt.conflict {
@@ -237,7 +299,7 @@ struct CloudUsage: Decodable { let storedBytes: Int64 }
                 retained!.pages = retained!.pages.map { page in var next = page; next.id = CloudCodec.stableID("\(receipt.id):\(page.id.lowercased())"); return next }
             }
             _ = try CloudCodec.apply(retained!, id: receipt.id, context: container.mainContext, directory: directory)
-            journal.baselines[receipt.id] = SyncBaseline(revision: copy.record.revision, localHash: try digest(copy.document), manifest: copy.record.manifest, pageHashes: try pageHashes(copy.document))
+            journal.baselines[receipt.id] = SyncBaseline(revision: copy.record.revision, localHash: try digest(copy.document), manifest: copy.record.manifest, pageHashes: try pageHashes(copy.document), document: copy.document)
             if let original { try adopt(original.document, record: original.record) }
             else {
                 if let local = try notebooks().first(where: { $0.id.uuidString.lowercased() == pending.id }) { container.mainContext.delete(local); try container.mainContext.save() }
@@ -245,9 +307,25 @@ struct CloudUsage: Decodable { let storedBytes: Int64 }
             }
             status = "Conflict copy preserved in your library."
         } else if let snapshot = pending.document {
-            let latest = try JSONDecoder().decode(CloudNotebook.self, from: await api("/api/v1/sync/notebooks/\(receipt.id)", "GET", nil))
-            let sameRevision = latest.revision == receipt.revision
-            journal.baselines[pending.id] = SyncBaseline(revision: receipt.revision, localHash: try digest(snapshot), manifest: sameRevision ? latest.manifest : nil, pageHashes: sameRevision ? try pageHashes(snapshot) : [:])
+            let latest = try? JSONDecoder().decode(CloudNotebook.self, from: await api("/api/v1/sync/notebooks/\(receipt.id)", "GET", nil))
+            try checkActive()
+            let original = pending.originalDocument ?? snapshot
+            if try CloudMerge.normalized(original) != CloudMerge.normalized(snapshot) {
+                if isEditing(pending.id) { throw CloudError.message("Finish the current gesture to apply merged cloud changes. Your work is retained.") }
+                if let now = try local(pending.id) {
+                    if let merged = try? CloudMerge.merge(base: original, local: now, remote: snapshot) {
+                        _ = try CloudCodec.apply(merged, id: pending.id, context: container.mainContext, directory: directory)
+                    } else {
+                        let recoveryID = CloudCodec.stableID("\(pending.operationId):\(try digest(now)):local-recovery")
+                        var copy = now; copy.title = "\(copy.title.prefix(96)) (conflict copy)"
+                        copy.pages = copy.pages.map { page in var value = page; value.id = CloudCodec.stableID("\(recoveryID):\(page.id)"); return value }
+                        _ = try CloudCodec.apply(copy, id: recoveryID, context: container.mainContext, directory: directory)
+                        _ = try CloudCodec.apply(snapshot, id: pending.id, context: container.mainContext, directory: directory)
+                    }
+                } else { _ = try CloudCodec.apply(snapshot, id: pending.id, context: container.mainContext, directory: directory) }
+            }
+            let sameRevision = latest?.revision == receipt.revision
+            journal.baselines[pending.id] = SyncBaseline(revision: receipt.revision, localHash: try digest(snapshot), manifest: sameRevision ? latest?.manifest : nil, pageHashes: sameRevision ? try pageHashes(snapshot) : [:], document: snapshot)
         }
         journal.pending = nil; try persist()
     }
@@ -259,33 +337,46 @@ struct CloudUsage: Decodable { let storedBytes: Int64 }
     }
     private func fetch(_ id: String) async throws -> (record: CloudNotebook, document: LocalCloudDocument) {
         let result = try JSONDecoder().decode(CloudDownloads.self, from: await api("/api/v1/sync/notebooks/\(id)?downloads=1", "GET", nil))
-        guard result.record.manifest.pages.count <= 300, result.record.manifest.pages.reduce(0, { $0 + $1.content.bytes + ($1.image?.bytes ?? 0) }) <= 128_000_000 else { throw CloudError.message("This notebook exceeds the initial 128 MB download limit.") }
+        return (result.record, try await decodeDocument(result.record.manifest, urls: result.urls))
+    }
+    private func decodeDocument(_ manifest: CloudManifest, urls: [String: String]) async throws -> LocalCloudDocument {
+        guard manifest.pages.count <= 300, manifest.pages.reduce(0, { $0 + $1.content.bytes + ($1.image?.bytes ?? 0) }) <= 128_000_000 else { throw CloudError.message("This notebook exceeds the initial 128 MB download limit.") }
         var pages: [LocalCloudPage] = []
-        for page in result.record.manifest.pages {
-            let content = try JSONDecoder().decode(SharedPageContent.self, from: await bytes(page.content, urls: result.urls))
+        for page in manifest.pages {
+            let content = try JSONDecoder().decode(SharedPageContent.self, from: await bytes(page.content, urls: urls))
             guard content.version == 1, content.strokes.count <= 20_000, content.text.count <= 100_000 else { throw CloudError.invalidDocument }
-            let image = try await page.image.mapAsync { try await self.bytes($0, urls: result.urls) }
+            let image = try await page.image.mapAsync { try await self.bytes($0, urls: urls) }
             pages.append(LocalCloudPage(id: page.id, size: page.size, template: page.template, color: page.color, inheritsStyle: page.inheritsStyle, content: content, image: image, imageKind: page.image?.kind))
         }
-        return (result.record, LocalCloudDocument(title: result.record.manifest.title, template: result.record.manifest.template, color: result.record.manifest.color, pages: pages))
+        return LocalCloudDocument(title: manifest.title, template: manifest.template, color: manifest.color, pages: pages)
     }
     private func adopt(_ document: LocalCloudDocument, record: CloudNotebook) throws {
         let notebook = try CloudCodec.apply(document, id: record.id, context: container.mainContext, directory: directory)
         let normalized = try CloudCodec.snapshot(notebook, directory: directory)
-        journal.baselines[record.id] = SyncBaseline(revision: record.revision, localHash: try digest(normalized), manifest: record.manifest, pageHashes: try pageHashes(normalized))
+        journal.baselines[record.id] = SyncBaseline(revision: record.revision, localHash: try digest(normalized), manifest: record.manifest, pageHashes: try pageHashes(normalized), document: normalized)
     }
     func migrateLegacy(from legacyOverride: ModelContainer? = nil, directory sourceDirectory: URL? = nil) async throws {
-        guard !running else { throw CloudError.message("Wait for the current sync to finish before importing local notebooks.") }
+        guard !importing else { return }
+        importing = true; migrationSummary = "Inspecting existing notebooks…"
+        defer { importing = false }
+        if let flight { _ = try? await flight.value }
+        flight = nil; flightID = nil
+        try checkActive()
         let legacy = try legacyOverride ?? DataController.legacyContainer()
+        let sources = try legacy.mainContext.fetch(FetchDescriptor<Notebook>())
+        guard !sources.isEmpty else { migrationSummary = "No existing notebooks were found in the legacy store."; return }
         let claimURL = root.deletingLastPathComponent().appendingPathComponent("legacy-owner.json")
         if legacyOverride == nil {
             if FileManager.default.fileExists(atPath: claimURL.path) {
                 guard try JSONDecoder().decode(String.self, from: Data(contentsOf: claimURL)) == account.id else { throw CloudError.message("These legacy notebooks have already been associated with another account on this Mac.") }
             } else { try CloudCodec.encode(account.id).write(to: claimURL, options: .atomic) }
         }
-        for source in try legacy.mainContext.fetch(FetchDescriptor<Notebook>()) {
+        var imported = 0, skipped = 0
+        var failures: [String] = []
+        for source in sources {
             let sourceID = source.id.uuidString.lowercased()
-            if journal.migrated.contains(sourceID) { continue }
+            if journal.migrated.contains(sourceID) { skipped += 1; continue }
+            do {
             var document = try CloudCodec.snapshot(source, directory: sourceDirectory ?? FileStore.legacyDrawingsDirectory)
             var destination = sourceID
             if let existing = try local(sourceID), try digest(existing) != digest(document) {
@@ -295,8 +386,13 @@ struct CloudUsage: Decodable { let storedBytes: Int64 }
             }
             _ = try CloudCodec.apply(document, id: destination, context: container.mainContext, directory: directory)
             journal.migrated.append(sourceID); try persist()
+            imported += 1
+            } catch { failures.append("\(source.title): \(error.localizedDescription)") }
         }
+        migrationSummary = "Found \(sources.count) notebooks · imported \(imported) · already imported \(skipped)\(failures.isEmpty ? "" : " · failed \(failures.count)")"
+        importing = false
         try await synchronize()
+        if !failures.isEmpty { throw CloudError.message(migrationSummary + "\n" + failures.joined(separator: "\n")) }
     }
 }
 private extension Optional {

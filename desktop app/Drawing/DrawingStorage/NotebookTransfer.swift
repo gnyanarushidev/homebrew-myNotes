@@ -85,7 +85,7 @@ struct MacNotebookArchive: Codable {
                 let style = stroke.style
                 guard stroke.tool != .eraser, stroke.tool != .lasso,
                       !stroke.points.isEmpty, stroke.points.count <= 50_000,
-                      stroke.points.allSatisfy({ $0.x.isFinite && $0.y.isFinite && abs($0.x) <= 10_000 && abs($0.y) <= 10_000 }),
+                      stroke.points.allSatisfy({ $0.x.isFinite && $0.y.isFinite }),
                       [style.red, style.green, style.blue, style.alpha].allSatisfy({ $0.isFinite && (0...1).contains($0) }),
                       style.width.isFinite, (0.1...100).contains(style.width),
                       style.opacity.isFinite, (0.01...1).contains(style.opacity) else { throw NotebookTransferError.unsupportedContent }

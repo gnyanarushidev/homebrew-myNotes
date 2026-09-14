@@ -107,6 +107,10 @@ export async function legacyCount(owner: string) {
 export async function cloudUsage(owner: string) {
   const { data, error } = await serviceClient().rpc("cloud_usage", { p_owner: owner }); db(error); return data;
 }
+export async function operationReceipt(owner: string, id: string) {
+  const { data, error } = await serviceClient().from("cloud_operations").select("receipt").eq("owner_id", owner).eq("operation_id", id).maybeSingle();
+  db(error); if (!data) throw new HttpError(404, "Operation has not been acknowledged."); return data.receipt;
+}
 export async function migrateLegacyCloud(owner: string) {
   const service = serviceClient();
   const { data, error } = await service.from("mynotes_notebooks").select("id,document,mutation_id,revision").eq("owner_id", owner).order("id").limit(3);
