@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
-import { WorkspaceShell } from "@/features/preview/workspace-shell";
+import { WorkspaceShell } from "@/features/notebooks/workspace-shell";
+import { requireAccount } from "@/server/auth/access";
 
-export default function WorkspaceLayout({ children }: { children: ReactNode }) {
-  return <WorkspaceShell>{children}</WorkspaceShell>;
+export const dynamic = "force-dynamic";
+export default async function WorkspaceLayout({ children }: { children: ReactNode }) {
+  const user = await requireAccount();
+  return <WorkspaceShell user={user}>{children}</WorkspaceShell>;
 }

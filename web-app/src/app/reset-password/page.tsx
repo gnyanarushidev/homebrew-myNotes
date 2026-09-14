@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { AuthForm } from "@/features/auth/auth-form";
-import { requireAdmin } from "@/server/auth/access";
+import { requireAccount } from "@/server/auth/access";
 
 export const metadata: Metadata = { title: "Reset password" };
 export const dynamic = "force-dynamic";
 export default async function ResetPasswordPage() {
-  const user = await requireAdmin();
+  const user = await requireAccount();
   return <AuthForm mode="reset" verifiedEmail={user.email} />;
 }

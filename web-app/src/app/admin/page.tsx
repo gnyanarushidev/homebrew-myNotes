@@ -3,6 +3,7 @@ import { Brand, ActionLink } from "@/components/ui/ui";
 import { Icon } from "@/components/ui/icon";
 import { LogoutButton } from "@/features/auth/logout-button";
 import { requireAdmin } from "@/server/auth/access";
+import { People } from "@/features/admin/people";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = { title: "Admin dashboard" };
@@ -23,9 +24,9 @@ export default async function AdminPage() {
       </section>
       <div className={styles.cards}>
         <section><Icon name="lock" /><h2>Your account</h2><p>Manage the password for your administrator account.</p><ActionLink href="/reset-password" variant="secondary">Change password</ActionLink></section>
-        <section><Icon name="book" /><h2>Notebook interface</h2><p>Explore the sample library while notebook persistence is being built.</p><ActionLink href="/notebooks" variant="secondary">Open notebook preview</ActionLink></section>
-        <section><Icon name="users" /><h2>People & invitations</h2><p>User management is the next step. The interface preview uses fictional data.</p><ActionLink href="/preview/admin" variant="secondary">View interface preview</ActionLink></section>
+        <section><Icon name="book" /><h2>Your notebooks</h2><p>Write notes, organize pages, and export JSON backups.</p><ActionLink href="/notebooks" variant="secondary">Open notebooks</ActionLink></section>
       </div>
+      <section style={{ marginTop: 40 }}><People /></section>
     </main>
   </div>;
 }

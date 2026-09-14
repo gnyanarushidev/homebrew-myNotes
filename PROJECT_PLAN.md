@@ -1,6 +1,6 @@
 # MyNotes — Project Requirements and Implementation Plan
 
-**Status:** Full-stack application and administrator authentication implemented. Admin activation, general user invitations, and notebook persistence are the next steps.
+**Status:** Mac-style cloud drawing workspace and explicit local-Mac notebook transfer implemented. Desktop authentication/account storage now has a detailed implementation plan; automatic synchronization remains upcoming.
 **Initial audience:** Personal, non-commercial use by invited users.
 **Platforms:** Web application and native macOS application.
 
@@ -28,9 +28,45 @@ The administrator authentication increment adds Supabase password sign-in, Googl
 
 Focused verification completed: production build and six authentication browser tests covering setup links, password changes, login/logout, CSRF rejection, forbidden/forged identities, refresh, and Google PKCE. The local setup command was checked against the configured Supabase project without sending an email. The existing full regression suite was not repeated for this increment.
 
-Redeploy and follow [`web-app/ADMIN_SETUP.md`](web-app/ADMIN_SETUP.md) to activate the administrator. General invited-user admission and management are the next account milestone. The shared-document prototype remains an early prerequisite for implementing notebook content and synchronization.
+Administrator activation and hosted setup follow [`web-app/ADMIN_SETUP.md`](web-app/ADMIN_SETUP.md).
 
-The phase table below remains the full roadmap; its shared-document, authentication, and synchronization deliverables will be completed in later increments.
+### Previous increment: invited accounts and notebook persistence
+
+Continued the existing in-progress account/storage work and replaced the remaining notebook preview dependencies with the persistent workspace:
+
+- Verified invited users can sign in with email/password or Google. Both methods require the same server-protected Supabase app-metadata access grant; editable profile metadata cannot authorize a user.
+- `/admin` lists accounts and supports invitations, duplicate detection, resend/setup emails, and access revocation. Revoked sessions fail subsequent protected requests; cloud notebooks are retained. `/preview/admin` redirects to `/admin`.
+- `/notebooks` is an authenticated, private library with creation, title/page-text search, sorting, deletion, and JSON import. All notebook API queries enforce immutable account ownership, including requests by the administrator.
+- `web-app/supabase/migrations/001_notebooks.sql` creates whole-document notebook storage, derived library/search fields, and default-deny RLS. Anonymous/authenticated Supabase clients have no direct table privileges; server service-role queries enforce ownership.
+- The editor persists notebook titles, ordered pages, page text, notebook/page paper settings, and page sizes. Saved strokes display read-only. JSON v1 exports/imports preserve the supported web document data.
+- IndexedDB drafts recover interrupted saves. Autosave uses revision-conditional updates, detects stale/deleted cloud versions, and offers an explicit whole-notebook conflict copy. Immediate retries of the latest mutation, including simultaneous creation requests, are idempotent.
+- Request validation limits cloud saves to 3 MB and 300 pages; JSON imports to 2.9 MB. These are initial implementation bounds, not measured release capacity limits.
+
+**Verification completed:** Node.js 24 linting and type checking, production build, all **15 browser/API tests**, and **3 embedded PostgreSQL migration tests**. Coverage includes password/Google admission, email callbacks, forged identities, refresh, CSRF, ownership, revocation, document validation, stale revisions, persistent editor controls, JSON backups, local-draft recovery/conflict copies, and mobile layout. PostgreSQL tests execute the actual migration and verify generated columns, table permissions, RLS, and revision predicates. CI now runs the database checks as well.
+
+**Deployment still required:** apply the SQL migration in Supabase, set server-only `SUPABASE_SECRET_KEY` in Vercel, and redeploy. Verify actual SMTP delivery, administrator activation, and Google identity linking on the configured project. Local verification used a test HTTP provider and embedded PostgreSQL; it did not apply the migration to the hosted project or send real invitations.
+
+### Current increment: matching web/Mac notebooks and local drawings
+
+- Replaced cover cards and the framed preview editor with a compact notebook sidebar, full-height dark canvas, continuous pages, native-style controls, and a draggable floating writing palette.
+- React Konva renders editable pen, pencil, highlighter, rectangle, circle, line, and arrow paths. Whole-stroke erasing, lasso selection/move/resize/rotate, deletion, undo/redo, keyboard shortcuts, page controls, hand panning, zoom/fit, and explicit/scroll-triggered page creation are connected to the document.
+- Each completed gesture saves through the existing account-owned cloud notebook API and local recovery draft. JSON backups retain editable data; page/notebook PDF exports include paper, ink, text, and images.
+- The native export menu now offers **Export for web (.json)**. It preserves IDs, page order, native point paths, full-precision stroke styles, text, paper overrides, and PNG-converted page images. Missing/unreadable drawings stop export, and original local data is retained.
+- Web import accepts full Mac exports and raw legacy `.drawing.json` files. Native shapes remain explicit polylines rather than being reconstructed from two endpoints. Server-side account/source/content identities make repeated imports safe and preserve newer cloud edits.
+- Added [`web-app/NOTEBOOK_TRANSFER.md`](web-app/NOTEBOOK_TRANSFER.md) for the existing-local → authenticated-cloud workflow and [`DESKTOP_AUTH_PLAN.md`](DESKTOP_AUTH_PLAN.md) for the native authentication rollout.
+
+**Locally verified:** web lint/type checks and production build; **19 browser/API/geometry tests** and **3 PostgreSQL migration tests**, including drawing/cloud reload, erasing/history, lasso movement/resize/rotation, PDF generation, native import preservation/deduplication, and ownership. The macOS app builds; all **8 native selection regressions** and **5 native transfer checks** pass, including page order and image content. The actual Swift exporter is checked against the same fixture consumed by web import tests. This verifies the Mac → web transfer direction; native cloud decoding, bidirectional round-trip, and dense-page performance remain prototype follow-ups.
+
+Cloud setup still uses `001_notebooks.sql` and the configured server environment. No additional SQL migration is needed for the new drawing fields. Native-to-cloud transfer is manual through the export/import workflow; the installed Mac app needs the updated build to expose the export action. Desktop sign-in is planned below, not yet enabled.
+
+### Next implementation work
+
+1. **Desktop authentication:** implement the bearer-token/account-admission contract, Supabase Swift sign-in, Google `ASWebAuthenticationSession`/PKCE, and Keychain sessions as specified in [`DESKTOP_AUTH_PLAN.md`](DESKTOP_AUTH_PLAN.md).
+2. **Per-account stores and local migration:** gate the Mac library, partition SwiftData/drawing files by verified account ID, retain previously authenticated offline access, implement native cloud-document decoding, and reuse import source IDs for legacy migration.
+3. **Synchronization-ready cloud foundation:** add transactional change feeds, durable operation deduplication, deletion records, per-page conflict handling, and B2/staged large-asset transfer. Current revisions apply to whole notebooks and remember only the latest mutation; current deletion is permanent.
+4. **Invitation and editor hardening:** independent invitation expiry/acceptance history; same-notebook multi-tab draft isolation; measured dense-page rendering; cross-page ink continuation; complete native/web drawing round-trip and sign-out cleanup checks.
+
+The phase table below remains the full roadmap. Current work advances phases 2, 3, 4, 7, and the explicit-import portion of phase 8; those phases are not yet complete.
 
 ## 1. Project goal
 
@@ -186,6 +222,8 @@ Custom SMTP is required to invite ordinary users. Supabase's default email servi
 Recommended setup: Resend connected to Supabase SMTP, using a verified sending domain. The provider and domain remain setup decisions.
 
 ## 5. Desktop authentication
+
+The concrete implementation sequence, modules, state machine, API changes, and acceptance checks are in [`DESKTOP_AUTH_PLAN.md`](DESKTOP_AUTH_PLAN.md). Start with bearer-token admission and the native sign-in/Keychain shell, then account-scoped storage before enabling downloads or migration.
 
 - First-time sign-in on a Mac requires internet access.
 - The notebook library opens only after successful authentication and application-access validation.

@@ -1,17 +1,8 @@
-import { test, expect, type BrowserContext, type APIRequestContext } from "@playwright/test";
+import { test, expect } from "@playwright/test";
+import { origin, provider, installSession } from "./support/session";
 
-const origin = "http://127.0.0.1:3101";
-const provider = "http://127.0.0.1:54329";
 test.describe.configure({ mode: "default" });
 test.beforeEach(async ({ request }) => { await request.post(`${provider}/__test__/reset`); });
-
-async function installSession(context: BrowserContext, request: APIRequestContext, query = "") {
-  const session = await (await request.get(`${provider}/__test__/session${query}`)).json();
-  const encoded = `base64-${Buffer.from(JSON.stringify(session)).toString("base64url")}`;
-  const chunks = encoded.match(/.{1,3000}/g) ?? [];
-  await context.addCookies(chunks.map((value, index) => ({ name: chunks.length === 1 ? "mynotes-auth" : `mynotes-auth.${index}`, value, url: origin, httpOnly: true, sameSite: "Lax" as const })));
-  return session;
-}
 
 test("admin invitation verifies the email, sets a password, and supports real sign-in/logout", async ({ page, request, context }) => {
   const invitation = await (await request.get(`${provider}/__test__/invite`)).json();
@@ -101,4 +92,35 @@ test("password recovery and token-hash invitations work; expired links fail safe
   await expect(page).toHaveURL(/\/login\?reason=link-invalid$/);
   await page.goto("/auth/callback?token_hash=valid-invite&type=invite");
   await expect(page.getByRole("heading", { name: "Choose your password." })).toBeVisible();
+});
+
+test("password and Google sign-in admit invited identities and reject uninvited identities", async ({ page, request, context }) => {
+  for (const user of ["invited", "member"]) {
+    await context.clearCookies();
+    const login = await context.request.post("/api/auth/login", { headers: { Origin: origin }, data: { email: `${user}@example.com`, password: "member-password" } });
+    expect(login.status()).toBe(user === "invited" ? 200 : 401);
+    if (user === "invited") expect(await login.json()).toMatchObject({ next: "/notebooks" });
+    await context.clearCookies();
+    await request.post(`${provider}/__test__/oauth`, { data: { user } });
+    await page.goto("/login");
+    await page.getByRole("button", { name: "Continue with Google" }).click();
+    if (user === "invited") {
+      await expect(page.getByRole("heading", { name: "Your notebooks" })).toBeVisible();
+      const session = await (await context.request.get("/api/auth/session")).json();
+      expect(session).toMatchObject({ role: "member", user: { email: "invited@example.com" } });
+    } else {
+      await expect(page).toHaveURL(/\/login\?reason=link-invalid$/);
+      expect((await context.request.get("/api/notebooks")).status()).toBe(401);
+    }
+  }
+});
+
+test("default email-link fragments become private cookies and are removed from the URL", async ({ page, request, context }) => {
+  const session = await (await request.get(`${provider}/__test__/session?user=invited`)).json();
+  const fragment = new URLSearchParams({ access_token: session.access_token, refresh_token: session.refresh_token, type: "invite", token_type: "bearer", expires_in: "3600" });
+  await page.goto(`/auth/callback#${fragment}`);
+  await expect(page.getByRole("heading", { name: "Choose your password." })).toBeVisible();
+  expect(page.url()).not.toContain("access_token");
+  expect((await context.request.get("/api/auth/session")).status()).toBe(200);
+  expect(await page.evaluate(() => document.cookie)).not.toContain("mynotes-auth");
 });

@@ -21,20 +21,20 @@ const steps = [
     title: "Administrator authentication",
     description:
       "Supabase sign-in, protected admin access, password-setup emails, session refresh, and logout.",
-    status: "Current step",
+    status: "Complete",
   },
   {
     number: "04",
-    title: "Your notebook workspace",
+    title: "Desktop-style cloud drawing",
     description:
-      "Build the page editor, paper styles, drawing tools, and cloud saves around a shared document format.",
-    status: "Planned",
+      "A Mac-style sidebar and continuous canvas, floating drawing tools, cloud saves, PDF export, and import of local Mac drawings.",
+    status: "Current step",
   },
   {
     number: "05",
-    title: "Take your notes offline",
+    title: "Desktop sign-in and offline sync",
     description:
-      "Download notebooks to your Mac and synchronize offline edits when you reconnect.",
+      "Supabase sign-in, Keychain sessions, private account stores, local migration, downloads, and synchronization after reconnecting.",
     status: "Planned",
   },
 ];
@@ -49,7 +49,7 @@ export function SetupOverview() {
           </span>
           MyNotes
         </Link>
-        <span className={styles.badge}>Frontend preview</span>
+        <span className={styles.badge}>Cloud notebook foundation</span>
       </header>
 
       <main id="main-content">
@@ -61,9 +61,9 @@ export function SetupOverview() {
             Online and off.
           </h1>
           <p className={styles.introduction}>
-            The frontend page previews are ready to explore and deploy.
-            Administrator authentication is now connected in code. Redeploy,
-            then send your initial admin setup email.
+            Invited accounts and private notebook storage are connected in code.
+            Apply the notebook database migration, configure the server secret,
+            and redeploy to enable the workspace.
           </p>
           <div className={styles.actions}>
             <Link className={styles.primaryLink} href="/notebooks">
@@ -85,7 +85,7 @@ export function SetupOverview() {
               <li className={styles.step} key={step.number}>
                 <span className={styles.stepNumber}>{step.number}</span>
                 <div>
-                  <p className={index === 2 ? styles.currentStatus : styles.status}>
+                  <p className={index === 3 ? styles.currentStatus : styles.status}>
                     {step.status}
                   </p>
                   <h3>{step.title}</h3>
@@ -103,13 +103,13 @@ export function SetupOverview() {
         >
           <div>
             <p className={styles.eyebrow}>Next integration</p>
-            <h2 id="next-step-title">Activate your administrator account</h2>
+            <h2 id="next-step-title">Sign into the same account on Mac</h2>
             <p>
-              Deploy the authentication update, verify the callback URLs, and
-              run the admin invitation command documented in the project README.
+              Add native sign-in and account-specific local storage, then
+              download cloud notebooks and synchronize offline changes.
             </p>
           </div>
-          <span className={styles.nextLabel}>Email + Google sign-in</span>
+          <span className={styles.nextLabel}>Mac + web compatibility</span>
         </section>
       </main>
 

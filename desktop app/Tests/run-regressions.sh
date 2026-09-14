@@ -7,6 +7,10 @@ if [[ "${1:-}" == "--selection" ]]; then
     HARNESS="$ROOT/Tests/SelectionRegression.swift"
     shift
 fi
+if [[ "${1:-}" == "--transfer" ]]; then
+    HARNESS="$ROOT/Tests/TransferRegression.swift"
+    shift
+fi
 TEMP_ROOT="${MYNOTES_TEST_TEMP_ROOT:-${TMPDIR:-/tmp}}"
 test -d "$TEMP_ROOT"
 RUN_DIR="$(mktemp -d "$TEMP_ROOT/notebook-regressions.XXXXXX")"
@@ -24,6 +28,7 @@ swiftc -parse-as-library -module-name NotebookRegression \
     "$ROOT/Drawing/Cursor/CursorModel.swift" \
     "$ROOT/Drawing/Cursor/NativeCursorFactory.swift" \
     "$ROOT/Drawing/DrawingStorage/DrawingStorage.swift" \
+    "$ROOT/Drawing/DrawingStorage/NotebookTransfer.swift" \
     "$ROOT/Core/Storage/FileStore.swift" \
     "$ROOT/Core/Persistence/DataController.swift" \
     "$ROOT/Features/Library/LibraryView.swift" \

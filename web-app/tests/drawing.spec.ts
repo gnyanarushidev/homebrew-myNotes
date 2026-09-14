@@ -1,0 +1,130 @@
+import { test, expect, type Page } from "@playwright/test";
+import { PDFDocument } from "pdf-lib";
+import { installSession, mutationHeaders, provider } from "./support/session";
+import { newDocument, type NotebookRecord } from "../src/lib/notebook";
+import fixture from "./fixtures/mac-notebook.json";
+import { hitStroke, lassoContains, strokePoints } from "../src/lib/drawing";
+import { parseNotebookImport } from "../src/lib/notebook-import";
+
+test.beforeEach(async ({ request }) => { await request.post(`${provider}/__test__/reset`); });
+
+async function gesture(page: Page, points: [number, number][], pageNumber = 1, logicalWidth = 612) {
+  const canvas = page.getByRole("application", { name: `Drawing page ${pageNumber}`, exact: true });
+  await expect(canvas.locator("canvas").first()).toBeVisible();
+  const box = (await canvas.boundingBox())!;
+  const scale = box.width / logicalWidth;
+  await page.mouse.move(box.x + points[0][0] * scale, box.y + points[0][1] * scale);
+  await page.mouse.down();
+  for (const [x, y] of points.slice(1)) await page.mouse.move(box.x + x * scale, box.y + y * scale, { steps: 4 });
+  await page.mouse.up();
+}
+
+test("desktop-style drawing tools save editable ink, shapes, history, and PDF to the cloud", async ({ page, context, request }, testInfo) => {
+  await installSession(context, request, "?user=invited");
+  const id = crypto.randomUUID();
+  await context.request.post("/api/notebooks", { headers: mutationHeaders, data: { id, document: newDocument("Drawing workspace"), mutationId: crypto.randomUUID() } });
+  await page.goto(`/notebooks/${id}`);
+  await gesture(page, [[80, 180], [140, 210], [210, 190]]);
+  await page.getByRole("button", { name: "Highlighter", exact: true }).click();
+  await gesture(page, [[80, 260], [240, 260]]);
+  await page.getByRole("button", { name: "Rectangle", exact: true }).click();
+  await gesture(page, [[310, 180], [440, 290]]);
+  await expect(page.getByRole("status").filter({ hasText: "Saved to cloud" })).toBeVisible();
+  let record: NotebookRecord = await (await context.request.get(`/api/notebooks/${id}`)).json();
+  expect(record.document.pages[0].strokes).toHaveLength(3);
+  expect(record.document.pages[0].strokes[1]).toMatchObject({ tool: "highlighter", width: 14, opacity: .35 });
+  expect(record.document.pages[0].strokes[2].points).toHaveLength(5);
+  await page.getByRole("button", { name: "Eraser", exact: true }).click();
+  await gesture(page, [[150, 230], [150, 290]]);
+  await expect(page.getByRole("application", { name: "Drawing page 1" })).toHaveAttribute("data-stroke-count", "2");
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(page.getByRole("application", { name: "Drawing page 1" })).toHaveAttribute("data-stroke-count", "3");
+  await page.getByRole("button", { name: "Redo", exact: true }).click();
+  await expect(page.getByRole("application", { name: "Drawing page 1" })).toHaveAttribute("data-stroke-count", "2");
+  await page.getByRole("button", { name: "Lasso", exact: true }).click();
+  await gesture(page, [[300, 160], [460, 160], [460, 310], [300, 310], [300, 160]]);
+  await expect(page.getByRole("button", { name: "Delete selection", exact: true })).toBeEnabled();
+  await gesture(page, [[360, 220], [390, 250]]);
+  await expect(page.getByRole("status").filter({ hasText: "Saved to cloud" })).toBeVisible();
+  record = await (await context.request.get(`/api/notebooks/${id}`)).json();
+  expect(record.document.pages[0].strokes[1].points[0].x).toBeCloseTo(340, 0);
+  expect(record.document.pages[0].strokes[1].points[0].y).toBeCloseTo(210, 0);
+  await page.screenshot({ path: testInfo.outputPath("desktop-web-editor.png"), fullPage: true });
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByLabel("Export notebook", { exact: true }).click();
+  await page.getByRole("button", { name: "Export PDF", exact: true }).click();
+  const download = await downloadPromise;
+  const stream = (await download.createReadStream())!;
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) chunks.push(chunk);
+  const pdf = await PDFDocument.load(Buffer.concat(chunks));
+  expect(pdf.getPageCount()).toBe(1);
+  expect(pdf.getPage(0).getSize()).toEqual({ width: 612, height: 792 });
+  await page.reload();
+  await expect(page.getByRole("application", { name: "Drawing page 1" })).toHaveAttribute("data-stroke-count", "2");
+  await expect(page.getByRole("navigation", { name: "Notebooks", exact: true }).getByRole("link", { name: /Drawing workspace/ })).toBeVisible();
+});
+
+test("Mac export import preserves transformed geometry and styles, deduplicates retries, and respects ownership", async ({ page, context, request }) => {
+  await installSession(context, request, "?user=invited");
+  await page.goto("/notebooks");
+  await page.locator('input[type="file"]').setInputFiles({ name: "Mac.mynotes.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(fixture)) });
+  await expect(page.getByLabel("Notebook title")).toHaveValue("Mac drawing transfer");
+  const id = page.url().split("/").pop()!;
+  const record: NotebookRecord = await (await context.request.get(`/api/notebooks/${id}`)).json();
+  const imported = record.document.pages[0];
+  expect(imported).toMatchObject({ id: fixture.notebook.pages[0].id, size: "a4Portrait", template: "dots", inheritsStyle: false, text: "Original local notes" });
+  expect(imported.strokes[0]).toMatchObject({ id: fixture.notebook.pages[0].strokes[0].id, geometry: "polyline", points: fixture.notebook.pages[0].strokes[0].points, width: 4.5, opacity: .6, rgba: { red: .123456789, green: .4, blue: .8, alpha: .7 } });
+  const edited = { ...record.document, title: "Edited in cloud" };
+  await context.request.put(`/api/notebooks/${id}`, { headers: mutationHeaders, data: { id, document: edited, revision: record.revision, mutationId: crypto.randomUUID() } });
+  const again = await context.request.post("/api/notebooks/import", { headers: mutationHeaders, data: { value: fixture, filename: "renamed.json", id: crypto.randomUUID(), mutationId: crypto.randomUUID() } });
+  expect(again.status()).toBe(200);
+  expect(await again.json()).toMatchObject({ id, document: { title: "Edited in cloud" } });
+  expect(await (await context.request.get("/api/notebooks")).json()).toHaveLength(1);
+  await context.clearCookies();
+  await installSession(context, request);
+  expect((await context.request.get(`/api/notebooks/${id}`)).status()).toBe(404);
+  const other = await context.request.post("/api/notebooks/import", { headers: mutationHeaders, data: { value: fixture, filename: "Mac.json", id: crypto.randomUUID(), mutationId: crypto.randomUUID() } });
+  expect(other.status()).toBe(201);
+  expect((await other.json()).id).not.toBe(id);
+});
+
+test("native polylines, legacy styles, and crossing-segment selection survive conversion", () => {
+  const { document } = parseNotebookImport(fixture);
+  const stroke = document.pages[0].strokes[0];
+  expect(strokePoints(stroke)).toEqual(fixture.notebook.pages[0].strokes[0].points);
+  const line = { ...stroke, points: [{ x: 0, y: 50 }, { x: 500, y: 50 }] };
+  expect(lassoContains(line, [{ x: 200, y: 40 }, { x: 300, y: 40 }, { x: 300, y: 60 }, { x: 200, y: 60 }])).toBe(true);
+  expect(hitStroke(line, { x: 250, y: 10 }, { x: 250, y: 90 }, 1)).toBe(true);
+  expect(hitStroke(line, { x: 600, y: 50 }, { x: 700, y: 50 }, 1)).toBe(false);
+  const legacy = parseNotebookImport([{ id: crypto.randomUUID(), points: [{ x: 1, y: 2 }], tool: "highlighter" }], "legacy.drawing.json");
+  expect(legacy.document.pages[0].strokes[0]).toMatchObject({ width: 14, opacity: .35, color: "#ffff00" });
+});
+
+test("selection resize and rotation preserve stroke identity and survive cloud reload", async ({ page, context, request }) => {
+  await installSession(context, request, "?user=invited");
+  const id = crypto.randomUUID(), strokeId = crypto.randomUUID();
+  const document = newDocument("Transforms");
+  document.pages[0].strokes = [{ id: strokeId, tool: "rectangle", geometry: "polyline", points: [{ x: 100, y: 200 }, { x: 200, y: 200 }, { x: 200, y: 300 }, { x: 100, y: 300 }, { x: 100, y: 200 }], color: "#2563eb", width: 3, opacity: 1 }];
+  await context.request.post("/api/notebooks", { headers: mutationHeaders, data: { id, document, mutationId: crypto.randomUUID() } });
+  await page.goto(`/notebooks/${id}`);
+  await page.getByRole("button", { name: "Lasso", exact: true }).click();
+  await gesture(page, [[80, 180], [220, 180], [220, 320], [80, 320], [80, 180]]);
+  await gesture(page, [[201.5, 301.5], [251.5, 351.5]]);
+  await expect(page.getByRole("status").filter({ hasText: "Saved to cloud" })).toBeVisible();
+  const resized: NotebookRecord = await (await context.request.get(`/api/notebooks/${id}`)).json();
+  const resizedPoints = resized.document.pages[0].strokes[0].points;
+  expect(resizedPoints[1].x - resizedPoints[0].x).toBeCloseTo(148.54, 0);
+  const box = (await page.getByRole("application", { name: "Drawing page 1" }).boundingBox())!;
+  const scale = box.width / 612;
+  await gesture(page, [[175, resizedPoints[0].y - 1.5 - 24 / scale], [280, 275]]);
+  await expect(page.getByRole("status").filter({ hasText: "Saved to cloud" })).toBeVisible();
+  const rotated: NotebookRecord = await (await context.request.get(`/api/notebooks/${id}`)).json();
+  const stroke = rotated.document.pages[0].strokes[0];
+  expect(stroke).toMatchObject({ id: strokeId, geometry: "polyline", color: "#2563eb", width: 3, opacity: 1 });
+  expect(Math.abs(stroke.points[1].x - stroke.points[0].x)).toBeLessThan(2);
+  expect(Math.hypot(stroke.points[1].x - stroke.points[0].x, stroke.points[1].y - stroke.points[0].y)).toBeCloseTo(148.54, 0);
+  expect(stroke.points[0]).toEqual(stroke.points.at(-1));
+  await page.reload();
+  await expect(page.getByRole("application", { name: "Drawing page 1" })).toHaveAttribute("data-stroke-count", "1");
+});

@@ -41,6 +41,9 @@ struct NotebookView: View {
     @State private var settingsTool: MacDrawingTool?
     @State private var showingDeleteConfirmation = false
     @State private var didInitialPerPageFit = false
+    @State private var showingWebExporter = false
+    @State private var webExportDocument = NotebookJSONDocument()
+    @State private var webExportError: String?
 #endif
 
     init(notebook: Notebook) {
@@ -145,6 +148,12 @@ struct NotebookView: View {
             contentType: .pdf,
             defaultFilename: exportFilename
         ) { _ in }
+        .fileExporter(isPresented: $showingWebExporter, document: webExportDocument, contentType: .json, defaultFilename: "\(safeExportName).mynotes") { result in
+            if case .failure(let error) = result { webExportError = error.localizedDescription }
+        }
+        .alert("Notebook export failed", isPresented: Binding(get: { webExportError != nil }, set: { if !$0 { webExportError = nil } })) {
+            Button("OK", role: .cancel) { webExportError = nil }
+        } message: { Text(webExportError ?? "") }
     }
 
     private var pageNavigationMenu: some View {
@@ -392,6 +401,18 @@ struct NotebookView: View {
             Button("Entire Notebook as PDF") {
                 preparePDFExport(pages: pages, filename: safeExportName)
             }
+#if os(macOS)
+            Divider()
+            Button("Export for web (.json)") {
+                do {
+                    let request = MacNotebookExportRequest(notebookID: notebook.id)
+                    NotificationCenter.default.post(name: .captureMacNotebookExport, object: request)
+                    try modelContext.save()
+                    webExportDocument = NotebookJSONDocument(data: try NotebookWebExporter.data(for: notebook, snapshots: request.strokes))
+                    showingWebExporter = true
+                } catch { webExportError = error.localizedDescription }
+            }
+#endif
         } label: {
             Label("Export PDF", systemImage: "square.and.arrow.up")
         }

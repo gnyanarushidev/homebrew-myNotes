@@ -5,7 +5,7 @@ import styles from "./home-page.module.css";
 
 const features: { icon: IconName; title: string; text: string; label: string }[] = [
   { icon: "pen", title: "Room to think", text: "Paper that fits your ideas. A familiar notebook space for writing, sketching, and connecting the dots.", label: "Editor layout available" },
-  { icon: "lock", title: "A space of your own", text: "A personal workspace, with verified administrator access and a private account at its heart.", label: "Administrator sign-in available" },
+  { icon: "lock", title: "A space of your own", text: "A personal workspace, with invited accounts and a private notebook library.", label: "Invited-user sign-in available" },
   { icon: "monitor", title: "At your desk. On the go.", text: "The plan: one library on the web and Mac, with offline editing that catches up when you reconnect.", label: "Desktop sync planned" },
 ];
 
@@ -23,7 +23,7 @@ export function HomePage() {
               <ActionLink href="/notebooks">Explore the workspace <Icon name="arrow" /></ActionLink>
               <ActionLink href="/login" variant="ghost">Already invited? Sign in</ActionLink>
             </div>
-            <p className={styles.previewNote}>Frontend preview · Sample notebooks · No account needed to explore</p>
+            <p className={styles.previewNote}>Private notebooks · Cloud saves · Invitation required</p>
           </div>
           <div className={styles.illustration} aria-label="Illustration of a cream notebook and handwritten ideas" role="img">
             <div className={styles.backCover} />
@@ -50,7 +50,7 @@ export function HomePage() {
 
         <section className={styles.invitation}>
           <div><p className={styles.eyebrow}>MADE FOR A SMALLER CIRCLE</p><h2>A personal workspace.<br />An open-ended canvas.</h2></div>
-          <div><p>MyNotes is taking shape, one thoughtful step at a time. Explore the notebook preview, or activate your administrator account using your setup email.</p><ActionLink href="/invite" variant="secondary">Account setup <Icon name="mail" /></ActionLink></div>
+          <div><p>MyNotes is taking shape, one thoughtful step at a time. Sign in to your notebook library, or activate your invited account using your setup email.</p><ActionLink href="/invite" variant="secondary">Account setup <Icon name="mail" /></ActionLink></div>
         </section>
       </main>
       <footer className={styles.footer}><Brand /><span>A home for your notes.</span><Link href="/setup">Build status</Link></footer>

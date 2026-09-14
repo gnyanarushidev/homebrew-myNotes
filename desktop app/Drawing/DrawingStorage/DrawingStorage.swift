@@ -252,6 +252,15 @@ enum DrawingStorage {
 
 #if os(macOS)
 enum MacDrawingStorage {
+    static func loadForExport(from fileName: String) throws -> [MacStroke] {
+        do {
+            let data = try Data(contentsOf: DrawingStorage.urlForReading(fileName))
+            return try JSONDecoder().decode([MacStroke].self, from: data)
+        } catch {
+            throw NotebookTransferError.unreadableDrawing(fileName)
+        }
+    }
+
     static func load(from fileName: String) -> [MacStroke] {
         let url = DrawingStorage.urlForReading(fileName)
         guard let data = try? Data(contentsOf: url) else { return [] }

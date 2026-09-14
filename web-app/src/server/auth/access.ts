@@ -4,10 +4,10 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
-import { authCookieOptions, authFetch, isVerifiedAdmin } from "./client";
+import { authCookieOptions, authFetch, isAllowedAccount, isVerifiedAdmin } from "./client";
 import { getAuthSettings, AuthConfigurationError } from "./settings";
 
-export const getAdminAccess = cache(async () => {
+export const getAccountAccess = cache(async () => {
   try {
     const settings = getAuthSettings();
     const store = await cookies();
@@ -22,12 +22,24 @@ export const getAdminAccess = cache(async () => {
     });
     const { data, error } = await client.auth.getUser();
     if (error || !data.user) return { status: "anonymous" as const };
-    if (!isVerifiedAdmin(data.user, settings)) return { status: "forbidden" as const };
-    return { status: "admin" as const, user: { id: data.user.id, email: data.user.email } };
+    if (!isAllowedAccount(data.user, settings)) return { status: "forbidden" as const };
+    const isAdmin = isVerifiedAdmin(data.user, settings);
+    return { status: isAdmin ? "admin" as const : "member" as const, user: { id: data.user.id, email: data.user.email, isAdmin } };
   } catch (error) {
     return { status: error instanceof AuthConfigurationError ? "unconfigured" as const : "unavailable" as const };
   }
 });
+
+export const getAdminAccess = cache(async () => {
+  const access = await getAccountAccess();
+  return access.status === "member" ? { status: "forbidden" as const } : access;
+});
+
+export async function requireAccount() {
+  const access = await getAccountAccess();
+  if (access.status !== "admin" && access.status !== "member") redirect(`/login?reason=${access.status}`);
+  return access.user;
+}
 
 export async function requireAdmin() {
   const access = await getAdminAccess();

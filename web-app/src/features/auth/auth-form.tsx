@@ -10,9 +10,9 @@ import ui from "@/components/ui/ui.module.css";
 import styles from "./auth-preview.module.css";
 
 const content = {
-  login: { eyebrow: "YOUR PERSONAL WORKSPACE", title: "Welcome back.", description: "Sign in with your administrator account to manage MyNotes.", submit: "Sign in", action: "login" },
-  forgot: { eyebrow: "LET’S GET YOU BACK IN", title: "Forgot your password?", description: "Enter your administrator email to receive a password-reset link.", submit: "Send reset link", action: "recovery" },
-  reset: { eyebrow: "A FRESH START", title: "Choose your password.", description: "Set a password for your verified account, then continue to the admin dashboard.", submit: "Save password", action: "password" },
+  login: { eyebrow: "YOUR PERSONAL WORKSPACE", title: "Welcome back.", description: "Sign in to your private notebook library.", submit: "Sign in", action: "login" },
+  forgot: { eyebrow: "LET’S GET YOU BACK IN", title: "Forgot your password?", description: "Enter your invited email to receive a password-reset link.", submit: "Send reset link", action: "recovery" },
+  reset: { eyebrow: "A FRESH START", title: "Choose your password.", description: "Set a password for your verified account, then continue to MyNotes.", submit: "Save password", action: "password" },
 };
 
 export function AuthForm({ mode, initialError = "", verifiedEmail }: { mode: keyof typeof content; initialError?: string; verifiedEmail?: string }) {
@@ -82,8 +82,8 @@ export function AuthForm({ mode, initialError = "", verifiedEmail }: { mode: key
       {message && <p role="status" className={`${ui.statusMessage} ${styles.message}`}>{message}</p>}
       <div className={styles.bottomLinks}>
         {mode !== "login" && <Link href="/login">Back to sign in</Link>}
-        {mode === "login" && <p>First time here? Open your admin setup email to choose a password.</p>}
-        <Link href="/notebooks">Explore the sample notebook interface</Link>
+        {mode === "login" && <p>First time here? Open your invitation email to choose a password.</p>}
+        <Link href="/notebooks">Open your notebooks</Link>
       </div>
     </AuthFrame>
   );

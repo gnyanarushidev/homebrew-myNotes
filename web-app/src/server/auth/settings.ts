@@ -44,5 +44,5 @@ export function callbackUrl(settings: AuthSettings, passwordSetup = false) {
 }
 
 export function authDestination(value: string | null) {
-  return value === "/reset-password" ? "/reset-password" : "/admin";
+  return value === "/reset-password" ? "/reset-password" : value === "/notebooks" ? "/notebooks" : "/admin";
 }

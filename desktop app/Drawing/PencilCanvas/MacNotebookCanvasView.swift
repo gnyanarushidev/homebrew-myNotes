@@ -95,6 +95,32 @@ final class MacNotebookCanvasNSView: NSView {
     private var pagesByID: [UUID: Page] = [:]
     private var pageConfigurations: [PageConfiguration] = []
     private var loadedPageIDs = Set<UUID>()
+    private var exportObserver: NSObjectProtocol?
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        observeExports()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        observeExports()
+    }
+
+    deinit {
+        if let exportObserver { NotificationCenter.default.removeObserver(exportObserver) }
+    }
+
+    private func observeExports() {
+        exportObserver = NotificationCenter.default.addObserver(forName: .captureMacNotebookExport, object: nil, queue: .main) { [weak self] notification in
+            MainActor.assumeIsolated {
+                guard let self, self.window?.isKeyWindow == true, let request = notification.object as? MacNotebookExportRequest else { return }
+                for (id, page) in self.pagesByID where page.notebook?.id == request.notebookID && self.loadedPageIDs.contains(id) {
+                    if let view = self.pageViews[id] { request.strokes[id] = view.strokes }
+                }
+            }
+        }
+    }
 
     override var isFlipped: Bool { true }
     override var acceptsFirstResponder: Bool { true }

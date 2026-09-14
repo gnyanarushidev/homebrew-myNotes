@@ -11,11 +11,13 @@ MyNotes is becoming a shared web and Mac notebook application with private accou
 | [`Casks/`](Casks/) | Homebrew distribution metadata |
 | [`PROJECT_PLAN.md`](PROJECT_PLAN.md) | Agreed requirements and implementation phases |
 
-## Current step: administrator authentication
+## Current step: desktop-style cloud drawing
 
-The web application now includes Supabase administrator sign-in, password setup/recovery, Google OAuth support, a protected admin dashboard, session refresh, and logout. Notebook and user-management interface previews remain available with fictional, session-local data.
+The web application now has a Mac-style notebook sidebar, continuous dark canvas workspace, floating drawing tools, selection/transforms, undo/redo, cloud autosave, and PDF/JSON export. Invited-user sign-in and admin invitation controls protect each user's notebooks.
 
-Follow [`web-app/ADMIN_SETUP.md`](web-app/ADMIN_SETUP.md) to redeploy, send the configured administrator a setup email, and sign in at `mynotes.gnyanarushi.tech/login`. General user invitations, drawing, cloud storage, and desktop synchronization follow the project plan.
+Follow [`web-app/ADMIN_SETUP.md`](web-app/ADMIN_SETUP.md) to configure cloud storage and authentication. Bring existing Mac drawings into the cloud with **Export for web (.json)** in the updated Mac app, then import through the web sidebar; see [`NOTEBOOK_TRANSFER.md`](web-app/NOTEBOOK_TRANSFER.md).
+
+Desktop sign-in, Keychain sessions, per-account local stores, migration, and offline synchronization are specified in [`DESKTOP_AUTH_PLAN.md`](DESKTOP_AUTH_PLAN.md). Automatic Mac/cloud synchronization is the next implementation track.
 
 ## Run the web application
 
@@ -30,10 +32,11 @@ npm --prefix web-app run dev
 
 Open <http://localhost:3000>. The health endpoint is <http://localhost:3000/api/v1/health>.
 
-Try `/login` and the protected `/admin` dashboard. Notebook previews are at `/notebooks`; the fictional user-management interface is at `/preview/admin`.
+Try `/login`, the protected `/admin` dashboard, and your private library at `/notebooks`. `/preview/admin` redirects to `/admin`.
 
 ```sh
 npm --prefix web-app run check
+npm --prefix web-app run test:database
 npm --prefix web-app run build
 npm --prefix web-app run start
 ```

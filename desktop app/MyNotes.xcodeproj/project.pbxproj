@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        AC0000000000000000000025 /* NotebookTransfer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000023 /* NotebookTransfer.swift */; };
+        AC0000000000000000000026 /* NotebookTransfer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000023 /* NotebookTransfer.swift */; };
 		AC0000000000000000000001 /* MyNotesApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000001 /* MyNotesApp.swift */; };
 		AC0000000000000000000002 /* NotebookModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000002 /* NotebookModel.swift */; };
 		AC0000000000000000000003 /* PageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0000000000000000000003 /* PageModel.swift */; };
@@ -44,6 +46,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+        AB0000000000000000000023 /* NotebookTransfer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotebookTransfer.swift; sourceTree = "<group>"; };
 		AB0000000000000000000001 /* MyNotesApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyNotesApp.swift; sourceTree = "<group>"; };
 		AB0000000000000000000002 /* NotebookModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotebookModel.swift; sourceTree = "<group>"; };
 		AB0000000000000000000003 /* PageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageModel.swift; sourceTree = "<group>"; };
@@ -238,6 +241,7 @@
 			isa = PBXGroup;
 			children = (
 				AB000000000000000000000D /* DrawingStorage.swift */,
+                AB0000000000000000000023 /* NotebookTransfer.swift */,
 			);
 			path = DrawingStorage;
 			sourceTree = "<group>";
@@ -382,6 +386,7 @@
 				AC000000000000000000000F /* MacNotebookCanvasView.swift in Sources */,
 				AC0000000000000000000021 /* CursorModel.swift in Sources */,
 				AC0000000000000000000022 /* NativeCursorFactory.swift in Sources */,
+                AC0000000000000000000025 /* NotebookTransfer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -405,6 +410,7 @@
 				AC000000000000000000001F /* MacNotebookCanvasView.swift in Sources */,
 				AC0000000000000000000023 /* CursorModel.swift in Sources */,
 				AC0000000000000000000024 /* NativeCursorFactory.swift in Sources */,
+                AC0000000000000000000026 /* NotebookTransfer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

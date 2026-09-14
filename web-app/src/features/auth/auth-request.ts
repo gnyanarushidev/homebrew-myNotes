@@ -12,5 +12,5 @@ export async function authRequest(action: string, body: object): Promise<{ next?
 }
 
 export function accountDestination(next?: string) {
-  return next === "/reset-password" ? "/reset-password" : "/admin";
+  return next === "/reset-password" ? "/reset-password" : next === "/notebooks" ? "/notebooks" : "/admin";
 }

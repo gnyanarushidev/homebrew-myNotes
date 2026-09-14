@@ -1,6 +1,6 @@
 # Administrator sign-in setup
 
-## 1. Deploy the authentication update
+## 1. Configure and deploy the account/storage update
 
 Use Node.js **24.x** on Vercel. Local development now requires Node.js **22.13+** or **24+**, because the Supabase SDK requires Node.js 22 or later. The repository's `.nvmrc` selects Node.js 24.
 
@@ -10,12 +10,15 @@ Set these variables in the Vercel project's production environment:
 APP_URL=https://mynotes.gnyanarushi.tech
 NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
+SUPABASE_SECRET_KEY=YOUR_SERVER_SECRET_OR_SERVICE_ROLE_KEY
 ADMIN_EMAIL=YOUR_ADMIN_EMAIL
 ```
 
 Use the same Supabase project and admin email as your local configuration. `APP_URL` must match the exact origin you use in the browser, including the port for local development. Authentication mutations reject requests from other origins.
 
-Redeploy the new code and open `/login`. The production `/admin` route now verifies the session on the server. The previous sample dashboard is at `/preview/admin`.
+Before opening notebooks, run the complete [`supabase/migrations/001_notebooks.sql`](supabase/migrations/001_notebooks.sql) file in **Supabase → SQL Editor**. It creates the notebook table, derived library/search columns, index, and default-deny row-level security. Only the server service role accesses the table, with explicit ownership checks in every API query.
+
+`SUPABASE_SECRET_KEY` is now required in the deployed server environment for user management, member recovery eligibility, and notebook operations. Keep it server-only. Redeploy and open `/login`; `/admin` manages real invitations and `/notebooks` opens the signed-in account's library. `/preview/admin` redirects to `/admin`.
 
 ## 2. Configure Supabase email redirects
 
@@ -43,9 +46,9 @@ http://localhost:3000/auth/callback?next=%2Freset-password
 
 Keep the default invitation/recovery email templates using Supabase's confirmation URL. The app supports the standard email fragment flow, OAuth PKCE codes, and token-hash invitation/recovery links.
 
-Confirm your Gmail custom SMTP settings are saved. The Gmail app password belongs in Supabase SMTP settings. The MyNotes account password is chosen by the admin through the email link.
+Confirm your custom SMTP settings and verified sender are saved. An email-provider app password, when required, belongs in Supabase SMTP settings. The MyNotes account password is chosen through the email link. Supabase's default mail service cannot invite ordinary users outside the project team.
 
-Disable **Allow new users to sign up** for the invite-only application. Server-side admin access is independently restricted to the verified email configured in `ADMIN_EMAIL`.
+Disable **Allow new users to sign up** for the invite-only application. Server-side admin access is independently restricted to verified `ADMIN_EMAIL`; members also require the admin-controlled `app_metadata.mynotes_access = "active"` grant. Editable `user_metadata` never grants access.
 
 ## 3. Send the initial admin setup email
 
@@ -84,7 +87,19 @@ APP_URL=https://mynotes.gnyanarushi.tech npm exec --yes --package=node@24 -- nod
 3. Continue to the protected admin dashboard.
 4. On later visits, use `/login` with the same email and password.
 
-The dashboard includes account information, password changes, logout, and links to the notebook and user-management interface previews. General user invitation management and notebook persistence are subsequent milestones.
+The dashboard includes password changes, logout, your notebook library, account counts, and **People & invitations**.
+
+## 5. Invite an ordinary user and verify notebook storage
+
+1. Choose **Invite someone**, enter their email, and send the invitation.
+2. The user opens the email and chooses a password, or signs in with Google using the same verified identity.
+3. They arrive at `/notebooks` and can create a notebook, enter page text, add pages, and change paper styles. Wait for **Saved to cloud**, then reload to verify persistence.
+4. **Invite / resend** sends a new invitation for an unconfirmed account; **Send setup link** sends password recovery for an already verified account. Duplicate new invitations return a clear error. Reinviting a revoked account restores access.
+5. **Revoke access** denies subsequent application requests from existing sessions and keeps cloud notebooks intact.
+
+Admission grants currently live in protected Supabase app metadata. Email-link expiration is enforced by Supabase; independent invitation expiry and acceptance/audit history are a later account increment. Verify SMTP delivery and Google identity linking on your configured project before onboarding users.
+
+The web editor includes cloud-backed drawing, selection/transforms, text, paper settings, and PDF/JSON export. Import existing local Mac notebooks using **Export for web (.json)** in the updated Mac app and the web sidebar's import button. See [`NOTEBOOK_TRANSFER.md`](NOTEBOOK_TRANSFER.md). Automatic desktop sign-in/sync follows the separate [desktop authentication plan](../DESKTOP_AUTH_PLAN.md).
 
 ## Google sign-in
 

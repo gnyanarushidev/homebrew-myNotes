@@ -1,0 +1,51 @@
+.layout { --text: #eeeeef; --muted: #adadb3; --accent: #508fff; --accent-soft: #253c60; --border: #444449; color-scheme: dark; display: grid; grid-template-columns: 248px minmax(0, 1fr); height: 100dvh; overflow: hidden; background: #1c1c1e; color: var(--text); font-size: 13px; line-height: 1.4; }
+.layout button { border: 0; border-radius: 5px; color: inherit; background: transparent; padding: 7px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.layout button:hover:not(:disabled) { background: #ffffff12; }
+.sidebar { display: flex; flex-direction: column; min-height: 0; background: #29292c; border-right: 1px solid #111; padding: 0 10px; overflow: hidden; }
+.brandRow { display: flex; justify-content: space-between; align-items: center; min-height: 49px; padding: 0 8px; font-size: 16px; font-weight: 650; }
+.brandRow a { text-decoration: none; }
+.brandRow svg { color: #9aa8b7; }
+.libraryActions { display: flex; justify-content: space-between; margin: 2px 0 12px; }
+.search { display: flex; align-items: center; gap: 6px; border: 1px solid #ffffff12; border-radius: 6px; background: #1c1c1e; padding: 7px; }
+.search input { width: 100%; border: 0; background: transparent; outline-offset: 1px; font-size: 12px; }
+.listHeading { display: flex; justify-content: space-between; align-items: center; color: #a5a5ac; font-size: 10px; padding: 16px 7px 6px; font-weight: 600; }
+.listHeading select { border: 0; background: transparent; color: #a5a5ac; max-width: 90px; font-size: 11px; }
+.notebookList { flex: 1; min-height: 60px; overflow: auto; }
+.notebookList > div { display: flex; border-radius: 6px; margin-bottom: 3px; }
+.notebookList > div[data-selected="true"] { background: #305b9b; }
+.notebookList a { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 9px; text-decoration: none; }
+.notebookList a svg { flex-shrink: 0; }
+.notebookList a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notebookList small { display: block; font-size: 10px; opacity: .6; margin-top: 3px; }
+.notebookList button { opacity: .45; padding: 5px; }
+.hint { padding: 0 8px; color: #a2a2aa; font-size: 11px; overflow-wrap: anywhere; }
+.hint h2 { font-size: 12px; font-weight: 500; }
+.account { border-top: 1px solid #ffffff12; padding: 12px 5px; font-size: 11px; }
+.account > span { display: block; overflow: hidden; text-overflow: ellipsis; }
+.account nav { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+.account nav a { color: #aab6c7; text-decoration: none; }
+.account button { min-height: 25px; font-size: 11px; }
+.workspace { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.windowBar { display: flex; align-items: center; min-height: 49px; gap: 12px; padding: 0 14px; background: #303033; border-bottom: 1px solid #161617; }
+.windowBar > span { font-weight: 600; }
+.windowBar .cloudLabel { margin-left: auto; display: flex; align-items: center; gap: 7px; font-weight: 400; font-size: 11px; color: #aaaab3; }
+.content { flex: 1; min-height: 0; min-width: 0; overflow: hidden; }
+.empty { height: 100%; padding: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #96969e; }
+.empty h1 { font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; margin: 24px 0 10px; }
+.empty h2 { font-size: 24px; margin: 0; color: #d9d9df; }
+.empty p { max-width: 450px; }
+.layout[data-collapsed="true"] { grid-template-columns: 0 minmax(0, 1fr); }
+.layout[data-collapsed="true"] .sidebar { visibility: hidden; }
+.layout .mobileToggle, .scrim { display: none; }
+.sidebar dialog { background: #303033; color: #eeeeef; border: 1px solid #555; }
+.dialogForm { display: grid; gap: 18px; }
+.dialogForm input, .dialogForm select { background: #202023; color: #eeeeef; }
+@media (max-width: 700px) {
+  .layout, .layout[data-collapsed="true"] { grid-template-columns: minmax(0, 1fr); }
+  .sidebar, .layout[data-collapsed="true"] .sidebar { visibility: visible; display: none; position: fixed; left: 0; top: 49px; bottom: 0; width: 265px; z-index: 30; }
+  .layout[data-mobile-open="true"] .sidebar { display: flex; }
+  .layout .mobileToggle { display: inline-flex; }
+  .layout .desktopToggle { display: none; }
+  .layout .scrim { display: block; position: fixed; inset: 49px 0 0; background: #0008; z-index: 25; border-radius: 0; }
+  .windowBar .cloudLabel { font-size: 10px; }
+}

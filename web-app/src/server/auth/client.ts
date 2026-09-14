@@ -15,6 +15,14 @@ export function isVerifiedAdmin(user: User | null, settings: AuthSettings): user
   return Boolean(user?.id && user.email_confirmed_at && !user.is_anonymous && user.email?.toLowerCase() === settings.adminEmail);
 }
 
+export function isAllowedAccount(user: User | null, settings: AuthSettings): user is User & { email: string } {
+  return isVerifiedAdmin(user, settings) || Boolean(user?.id && user.email && user.email_confirmed_at && !user.is_anonymous && user.app_metadata?.mynotes_access === "active");
+}
+
+export function accountHome(user: User, settings: AuthSettings) {
+  return isVerifiedAdmin(user, settings) ? "/admin" : "/notebooks";
+}
+
 export function authCookieOptions(settings: AuthSettings) {
   return { name: AUTH_COOKIE, httpOnly: true, secure: settings.appOrigin.startsWith("https:"), sameSite: "lax" as const, path: "/" };
 }

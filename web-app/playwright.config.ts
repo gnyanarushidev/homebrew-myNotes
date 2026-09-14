@@ -2,10 +2,12 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
-  fullyParallel: true,
+  testMatch: "**/*.spec.ts",
+  // The local provider is stateful; reset/account changes must not overlap.
+  fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  workers: 1,
   reporter: "list",
   use: {
     ...devices["Desktop Chrome"],

@@ -27,7 +27,7 @@ export function PublicHeader() {
     <header className={styles.publicHeader}>
       <Brand />
       <nav aria-label="Main navigation" className={styles.headerLinks}>
-        <Link href="/notebooks">Explore preview</Link>
+        <Link href="/notebooks">Your notebooks</Link>
         <ActionLink href="/login" variant="secondary">Sign in <Icon name="arrow" /></ActionLink>
       </nav>
     </header>

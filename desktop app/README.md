@@ -10,6 +10,7 @@ MyNotes is a native notebook app for iPhone, iPad, and Mac, built with SwiftUI. 
 - **Paper styles:** Choose blank, ruled, grid, or dotted paper with white, cream, or dark backgrounds. Set a notebook-wide style or customize individual pages.
 - **PDF export:** Export the current page or the entire notebook, including paper backgrounds, templates, and ink.
 - **Local persistence:** Notebook metadata is saved with SwiftData, with drawings stored in separate files.
+- **Transfer to the web:** Export a Mac notebook as editable JSON, then import it into the signed-in web cloud library with its original drawing paths, styles, page settings, and IDs.
 
 ### Platform-Specific Tools
 
@@ -148,7 +149,11 @@ The app shares SwiftUI screens and SwiftData models across platforms, with separ
 - Page image data uses SwiftData's external-storage attribute.
 - Deleting a notebook also deletes its pages and associated drawing files.
 
-There is no implemented cloud sync or drawing-format conversion between platforms. PDF export is not a complete backup of the editable notebook data.
+The export menu now includes **Export for web (.json)**. It produces an editable notebook archive for the web app's sidebar import button. Existing local drawings are preserved and imports are private to the signed-in web account. Full instructions and current size limits are in [`web-app/NOTEBOOK_TRANSFER.md`](../web-app/NOTEBOOK_TRANSFER.md).
+
+Desktop authentication and automatic cloud synchronization are not yet implemented. The native app still opens its local library without a login. The concrete rollout for Supabase sign-in, Google PKCE, Keychain storage, per-account stores, legacy migration, downloads, offline edits, and sign-out is in [`DESKTOP_AUTH_PLAN.md`](../DESKTOP_AUTH_PLAN.md).
+
+PDF export is a rendered document; **Export for web** preserves editable Mac notebook data within the current 2.9 MB transfer limit.
 
 ## Regression Tests
 
@@ -169,6 +174,14 @@ The focused selection harness can be run with:
 ```sh
 bash Tests/run-regressions.sh --selection
 ```
+
+Native export compatibility and source-preservation checks:
+
+```sh
+bash Tests/run-regressions.sh --transfer
+```
+
+Add `--fixture` to print the deterministic native JSON fixture also used by web import tests.
 
 The runner uses the system temporary directory by default. Set `MYNOTES_TEST_TEMP_ROOT` to an existing writable directory to override it.
 
