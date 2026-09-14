@@ -1,4 +1,4 @@
-import { getHealthStatus } from "@mynotes/backend/health";
+import { getHealthStatus } from "@/server/health";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

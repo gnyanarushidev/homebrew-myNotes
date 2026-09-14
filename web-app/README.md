@@ -1,4 +1,6 @@
-# MyNotes web workspace
+# MyNotes — Full-stack Next.js application
+
+One application, one `package.json`, one environment file, and one Vercel deployment. Next.js serves the interface and backend API routes together.
 
 ## Current step: frontend page previews
 
@@ -8,12 +10,12 @@ Implemented:
 - Responsive landing, authentication, notebook, editor, and admin page layouts.
 - Preview-only interactions: form validation, notebook search and creation, grid/list views, paper selection, zoom, page navigation, and sample invitations.
 - Shared workspace navigation and a collapsed mobile menu.
-- Server-only backend workspace package.
+- Server-only application services under `src/server/`.
 - Versioned application-liveness endpoint at `/api/v1/health`.
-- Shared TypeScript settings, ESLint, npm workspace scripts, and a lockfile.
+- TypeScript settings, ESLint, npm scripts, and a lockfile.
 - Environment template for upcoming authentication and storage integrations.
 
-The workspace starts without Supabase, Backblaze, or email credentials. All displayed accounts and notebooks are fictional. Preview changes stay in React memory and reset on reload or when leaving the workspace routes. Forms do not submit credentials, create real accounts, or send emails.
+The current preview starts without Supabase, Backblaze, or email credentials. All displayed accounts and notebooks are fictional. Preview changes stay in React memory and reset on reload or when leaving the workspace routes. Forms do not submit credentials, create real accounts, or send emails.
 
 ### Pages
 
@@ -34,9 +36,9 @@ The editor displays sample page artwork; drawing tools and PDF export are visibl
 
 ## Local development
 
-Use **Node.js 24 LTS** (see `.nvmrc`). The workspace also supports Node.js 20.19+ and 22.13+.
+Use **Node.js 24 LTS** (see `.nvmrc`). The application also supports Node.js 20.19+ and 22.13+.
 
-Run these commands from the `web app/` directory:
+Run these commands from the `web-app/` directory:
 
 ```sh
 npm ci
@@ -45,7 +47,7 @@ npm run dev
 
 Open <http://localhost:3000>.
 
-From the repository root, use `npm --prefix "web app" run dev`. Install dependencies at the web workspace root so both packages share the lockfile.
+From the repository root, use `npm --prefix web-app run dev`. All web dependencies are installed in `web-app/` using its single lockfile.
 
 ### Checks and production build
 
@@ -55,8 +57,8 @@ npm run build
 npm run start
 ```
 
-- `check`: ESLint plus type checking of both packages.
-- `build`: production Next.js build including the backend package.
+- `check`: ESLint plus type checking of pages, API routes, server services, and browser tests.
+- `build`: production Next.js build including all pages and backend API routes.
 - `start`: serve the completed production build.
 
 ### Browser checks
@@ -87,7 +89,7 @@ This checks application liveness, not external service availability.
 
 ## Environment setup for the next steps
 
-When ready, copy `frontend/.env.example` to `frontend/.env.local` and fill in the relevant values. Next.js loads environment files from `frontend/`, even when started through the root workspace scripts. Local environment files are ignored by Git.
+For a new checkout, copy `.env.example` to `.env.local` inside `web-app/` and fill in the relevant values. The existing local environment file was moved to this location during consolidation. Next.js loads it for the whole application. Local environment files are ignored by Git.
 
 | Setting | Purpose | Used in step |
 | --- | --- | --- |
@@ -112,38 +114,52 @@ If your email provider requires an app password, use it as the SMTP password in 
 
 For the next step, prepare the Supabase project settings and admin email. Configure SMTP before testing invitations to external recipients; Supabase's default sender restricts delivery to project-team addresses.
 
-## Workspace layout
+## Application layout
 
 ```text
-web app/
-├── package.json             # npm workspaces and shared commands
+web-app/
+├── package.json             # All web dependencies and commands
 ├── package-lock.json
-├── tsconfig.base.json
+├── .env.example
+├── .env.local               # Local configuration, ignored by Git
+├── next.config.ts
+├── tsconfig.json
 ├── eslint.config.mjs
-├── frontend/                # @mynotes/frontend
-│   ├── .env.example
-│   ├── next.config.ts
-│   └── src/
-│       ├── app/             # Pages, layouts, and API routes
-│       └── features/        # Feature UI
-└── backend/                 # @mynotes/backend
-    └── src/                 # Server-only application services
+├── vercel.json
+├── tests/
+└── src/
+    ├── app/                 # Pages and layouts
+    │   └── api/             # Backend HTTP endpoints
+    ├── components/
+    ├── features/
+    └── server/              # Server-only business logic
 ```
 
-`frontend/next.config.ts` configures package transpilation and file tracing to include `backend/`. Backend entry points use `server-only`, so importing them into client code is a build error.
+API routes import business logic through `@/server/`. Server entry points use `server-only`, so importing them into client code is a build error. Next.js bundles the routes and their server dependencies in the same build as the pages.
 
 ## Vercel configuration
 
-When deploying the frontend preview:
+Use one Vercel project for the full-stack application:
 
 1. Import the repository as a Next.js project.
-2. Set **Root Directory** to `web app/frontend`.
-3. Enable **Include source files outside of the Root Directory in the Build Step** so the sibling backend package and workspace configuration are available.
+2. Set **Root Directory** to `web-app`.
+3. Disable **Include source files outside of the Root Directory in the Build Step**; all web source code is inside the application root.
 4. Use **Node.js 24.x**.
-5. `frontend/vercel.json` sets **Install Command** to `npm --prefix .. ci` and **Build Command** to `npm run build`. Keep the default Next.js output directory.
+5. `vercel.json` sets **Install Command** to `npm ci` and **Build Command** to `npm run build`. Update any old dashboard overrides to match these values. Keep the default Next.js output directory.
 6. Add environment variables through Vercel's project settings when the corresponding integration is implemented.
 
 Vercel deploys the frontend and API routes together. The initial personal, non-commercial deployment can use Hobby within its limits.
+
+### Resolve the invalid Serverless Function name error
+
+The previous directory name contained a space, which was included in Vercel's generated `___next_launcher.cjs` function path. Vercel rejects function names containing spaces.
+
+The application now lives entirely in `web-app/`, with standard Next.js configuration and no sibling-package file tracing. After pushing the consolidation changes:
+
+1. Update the existing Vercel project's root and build settings as listed above.
+2. Deploy the **latest commit containing `web-app/`**, rather than rebuilding a commit with the old structure.
+3. For this first corrected deploy, turn off **Use existing Build Cache**.
+4. Verify both `/login` and `/api/v1/health` on the deployment URL. The health endpoint exercises the server logic within the same deployed application.
 
 ### Connect the application domain
 

@@ -9,7 +9,7 @@
 The first increment delivered:
 
 - Native sources, resources, Xcode project, and regression harnesses under `desktop app/`.
-- An npm workspace under `web app/` with a Next.js frontend and server-only backend package.
+- A Next.js application with both interface pages and server-side services, now consolidated under `web-app/`.
 - A responsive foundation page and `/api/v1/health` liveness endpoint.
 - Shared TypeScript configuration, linting, a dependency lockfile, and web CI checks.
 - Environment templates and local/Vercel setup instructions.
@@ -20,7 +20,11 @@ The second increment adds landing, sign-in, invitation, password recovery/reset,
 
 Second-increment verification completed: linting, TypeScript checks, production build, and six browser tests covering routes, form behavior, notebook interactions, sample invitations, and mobile layout. Browser tests also confirm that the authentication preview does not issue external requests.
 
-The immediate next step is to deploy the frontend to Vercel and connect `mynotes.gnyanarushi.tech`, then implement Supabase authentication and the admin invitation flow. See [`web app/README.md`](web%20app/README.md) for deployment and callback settings. The shared-document prototype remains an early prerequisite for implementing notebook content and synchronization.
+The web code has been consolidated into one Next.js application under `web-app/`: one package, one local environment file, one build, and one Vercel deployment. Pages live in `src/app/`, backend HTTP endpoints in `src/app/api/`, and server-only services in `src/server/`. The space-free application directory resolves the invalid generated function-name issue encountered during Vercel deployment.
+
+Consolidation verification completed locally: clean dependency installation, linting, TypeScript checks, production build, all six browser tests including the live backend health endpoint, and build-trace checks for the new application root. The existing Vercel project must be updated to Root Directory `web-app` before redeploying the latest commit.
+
+The immediate next step is to deploy this full-stack application to Vercel and connect `mynotes.gnyanarushi.tech`, then implement Supabase authentication and the admin invitation flow. See [`web-app/README.md`](web-app/README.md) for deployment and callback settings. The shared-document prototype remains an early prerequisite for implementing notebook content and synchronization.
 
 The phase table below remains the full roadmap; its shared-document, authentication, and synchronization deliverables will be completed in later increments.
 
@@ -39,8 +43,8 @@ Each user's notebooks belong to their account.
 ### Confirmed first-release decisions
 
 - Next.js full-stack, with Supabase Auth/Postgres and Backblaze B2.
-- One repository containing `desktop app/` and `web app/`.
-- Separate `frontend/` and `backend/` folders inside `web app/`, deployed as one Next.js application.
+- One repository containing `desktop app/` and `web-app/`.
+- One full-stack Next.js application inside `web-app/`, with pages, API routes, and server logic deployed together.
 - Desktop-first, drawing-first web experience.
 - Private notebooks and admin-managed invitations.
 - Email/password and Google sign-in on both web and Mac.
@@ -94,7 +98,7 @@ Both clients use the shared API for notebook and synchronization operations. Fil
 
 ## 3. Repository organization
 
-Planned structure:
+Application structure, with additional server modules introduced in their implementation phases:
 
 ```text
 MyNotes/
@@ -113,16 +117,18 @@ MyNotes/
 │   ├── MyNotes.xcodeproj/
 │   └── run-macos.sh
 │
-└── web app/
+└── web-app/
     ├── package.json
-    ├── frontend/
-    │   └── src/
-    │       ├── app/
-    │       │   └── api/
-    │       ├── components/
-    │       └── features/
-    └── backend/
-        └── src/
+    ├── package-lock.json
+    ├── .env.local
+    ├── next.config.ts
+    ├── vercel.json
+    └── src/
+        ├── app/
+        │   └── api/
+        ├── components/
+        ├── features/
+        └── server/
             ├── auth/
             ├── admin/
             ├── notebooks/
@@ -132,9 +138,9 @@ MyNotes/
             └── database/
 ```
 
-The web `backend/` folder is a server-only package used by Next.js API routes. Both web folders are deployed as one application. The build must include the backend workspace package.
+The `src/server/` folder contains server-only services used by Next.js API routes. The entire `web-app/` directory is a single application with one package manifest and build. Set Vercel's Root Directory to `web-app`.
 
-Reorganization includes updating native build scripts, release-workflow paths, documentation, and workspace configuration. Shell commands must quote paths containing spaces.
+Reorganization includes updating build scripts, CI paths, documentation, and environment-file locations. The deployed application path uses a hyphen so generated Vercel function names contain no spaces. Shell commands must quote native-app paths containing spaces.
 
 ## 4. Accounts, administration, and invitations
 

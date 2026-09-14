@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
 
 test("main routes render, navigation works, and unknown URLs have a recovery page", async ({ page, request }, testInfo) => {
+  const health = await request.get("/api/v1/health");
+  expect(health.status()).toBe(200);
+  expect(health.headers()["cache-control"]).toBe("no-store");
+  expect(await health.json()).toMatchObject({ status: "ok", service: "mynotes-api", apiVersion: "v1" });
   for (const path of ["/", "/login", "/invite", "/forgot-password", "/reset-password", "/notebooks", "/notebooks/everyday-ideas", "/admin", "/setup", "/auth/callback"]) {
     const response = await request.get(path);
     expect(response.status(), path).toBe(200);

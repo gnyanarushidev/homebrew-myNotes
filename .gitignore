@@ -18,7 +18,7 @@ xcuserdata/
 !.env.example
 .venv/
 
-# Web workspace
+# Next.js application
 node_modules/
 .next/
 out/

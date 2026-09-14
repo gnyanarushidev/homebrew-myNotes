@@ -6,7 +6,7 @@ const steps = [
     number: "01",
     title: "Application foundation",
     description:
-      "A Next.js workspace, shared server-side services, and the native Mac project in one repository.",
+      "One full-stack Next.js application with pages, API routes, and server logic, alongside the native Mac project.",
     status: "Complete",
   },
   {
