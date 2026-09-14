@@ -168,9 +168,9 @@ Desktop configuration should use the deployed API origin; the public configurati
 
 ### Live readiness check
 
-The configured B2 bucket was confirmed reachable and private. The MyNotes CORS rule has been applied for `https://mynotes.gnyanarushi.tech` and `http://localhost:3000`. The live Supabase check returned **404 for `cloud_notebooks`**: migration `002_cloud_storage.sql` still needs to be applied. Hosted redeployment, the native Google redirect entry and live two-device sign-in/sync checks remain operational setup tasks.
+The configured B2 bucket is reachable and private, the application GET/PUT CORS rule is present, and the live Supabase cloud metadata tables are accessible. The legacy-import/concurrent-sync repair was deployed as commit `696fa68` (public configuration reports sync protocol 2). The updated Mac app resumed the admitted account and completed the legacy import. Google-specific sign-in and extended offline/account-switch scenarios remain separate release checks.
 
-Source implementation and local tests do not by themselves activate hosted database resources. No real notebook contents have been uploaded or local legacy drawings moved by the coding-session checks.
+Automated regressions use isolated test stores and transports. The live repair below used the signed-in Mac application to copy and synchronize the actual legacy notebooks; the original legacy store and drawing files were retained.
 
 ### Verification completed for this implementation
 
@@ -180,7 +180,7 @@ Source implementation and local tests do not by themselves activate hosted datab
 - Unsigned **macOS build passed**.
 - **9 native cloud/account regressions**, **8 selection regressions** and **5 transfer regressions** passed. Tests use isolated temporary stores and fake cloud transport, including lost-acknowledgement restart, deleted-notebook recovery and source-data preservation.
 - Web checks remain in CI; a native build/regression workflow was added for Mac source changes.
-- Live readiness: private B2 access and the applied browser CORS rule passed; the missing Supabase cloud metadata migration remains the activation blocker. Live Google/Keychain and real two-device synchronization must be checked after migration and deployment.
+- The initial missing-migration blocker has been resolved. Current live storage and legacy-repair results are recorded below; the initial checks used local fixtures before activation.
 - A temporary synthetic B2 object verified real gzip upload/download and exact-version deletion; its version was removed. This did not upload personal notebook contents. Canonical uploads reserve metadata first, so interrupted publication remains discoverable by cleanup.
 
 ### Legacy import and false-conflict repair
@@ -190,7 +190,9 @@ Source implementation and local tests do not by themselves activate hosted datab
 - The corrected read-only inspection validated all 5 notebooks and 5,270 strokes. The original drawing files remain the source of truth during this repair.
 - Both clients merge independent changes by stable page/stroke IDs. The Mac persists complete acknowledged merge baselines and rebased pending operations, checks operation receipts before retrying, and preserves edits made while a merged upload is in flight.
 - The browser persists rebased drafts and no longer treats an optional post-commit metadata-read failure as a failed save. Requests are bound to the account that started them.
-- Added regressions for concurrent stroke additions without copies/echoes, metadata merging, lost merged acknowledgements, off-page legacy coordinates and partial-import reporting. Live activation/repair results are recorded after deployment.
+- Added regressions for concurrent stroke additions without copies/echoes, metadata merging, lost merged acknowledgements, off-page legacy coordinates and partial-import reporting. Verification passed: 25 browser/API/merge tests, 7 database tests, 13 native cloud/merge tests, 8 selection tests, 5 transfer tests, and web/macOS builds.
+- Live repair completed: all 5 legacy notebooks / 24 pages / 5,270 strokes were imported and synchronized. Combined with the pre-existing notebook, desktop and cloud contain 6 live notebooks / 26 pages. All 24 imported B2 page files passed checksum verification, including 49 strokes beyond the former coordinate bound. Local imported document digests match the original legacy snapshots.
+- The native journal reported 6 acknowledged baselines, 5 migrated source notebooks, no pending operation and a clean synchronized state. Imported notebooks remained at revision 1 during subsequent idle sync checks; no new conflict copies were created by the import. Refresh existing web tabs to load the deployed merge behavior and updated library.
 - Optional local diagnosis: `bash "desktop app/Tests/run-regressions.sh" --inspect-store <store-path> <drawing-directory>` reads counts and validation results without modifying the source.
 
 ## 9. Later milestones
