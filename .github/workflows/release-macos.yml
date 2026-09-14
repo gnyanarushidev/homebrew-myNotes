@@ -26,16 +26,16 @@ jobs:
       - name: Build macOS app
         run: |
           xcodebuild \
-            -project MyNotes.xcodeproj \
+            -project "desktop app/MyNotes.xcodeproj" \
             -scheme "MyNotes macOS" \
             -configuration Release \
-            -derivedDataPath build \
+            -derivedDataPath "desktop app/build" \
             CODE_SIGNING_ALLOWED=NO \
             build
 
       - name: Package app
         run: |
-          app_path="build/Build/Products/Release/MyNotes.app"
+          app_path="desktop app/build/Build/Products/Release/MyNotes.app"
           test -d "$app_path"
           ditto -c -k --sequesterRsrc --keepParent "$app_path" "$ZIP_NAME"
           shasum -a 256 "$ZIP_NAME" > "$ZIP_NAME.sha256"

@@ -1,0 +1,28 @@
+{
+  "name": "mynotes-web",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "engines": {
+    "node": "^20.19.0 || ^22.13.0 || >=24.0.0"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace @mynotes/frontend",
+    "build": "npm run build --workspace @mynotes/frontend",
+    "start": "npm run start --workspace @mynotes/frontend",
+    "lint": "eslint .",
+    "typecheck": "npm run typecheck --workspaces && tsc --project tsconfig.tools.json",
+    "check": "npm run lint && npm run typecheck",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "24.13.4",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.5",
+    "typescript": "5.9.3"
+  }
+}

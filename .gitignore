@@ -14,5 +14,17 @@ xcuserdata/
 
 # Local environment
 .env
+.env.*
+!.env.example
 .venv/
 
+# Web workspace
+node_modules/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+.vercel/
+npm-debug.log*
+test-results/
+playwright-report/

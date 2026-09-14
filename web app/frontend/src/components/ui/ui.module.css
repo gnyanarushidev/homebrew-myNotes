@@ -1,0 +1,45 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 43px;
+  padding: 10px 17px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-decoration: none;
+  transition: background 150ms, border-color 150ms;
+}
+.primary { background: var(--accent); color: #fff; }
+.primary:hover:not(:disabled) { background: #194532; }
+.secondary { border-color: var(--border); background: var(--surface); color: var(--text); }
+.secondary:hover:not(:disabled) { border-color: #9cae9e; background: #f5f7f2; }
+.ghost { background: transparent; color: var(--muted); }
+.ghost:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent); }
+.brand { display: inline-flex; align-items: center; gap: 9px; font-size: 22px; font-weight: 700; letter-spacing: -1px; text-decoration: none; white-space: nowrap; }
+.brandDot { margin-left: -8px; color: var(--accent); }
+.brandMark { display: grid; place-items: center; width: 35px; height: 39px; border-radius: 5px 10px 10px 5px; background: var(--accent); color: white; }
+.publicHeader { max-width: 1220px; margin: auto; padding: 26px 32px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.headerLinks { display: flex; align-items: center; gap: 28px; font-size: 14px; }
+.headerLinks > a:first-child { text-decoration: none; color: var(--muted); }
+.notice { display: flex; align-items: flex-start; gap: 9px; padding: 11px 18px; border: 1px solid #e9ddbf; border-radius: 8px; background: #fff9ec; color: #735829; font-size: 12px; }
+.notice strong { font-weight: 600; }
+.previewDot { flex-shrink: 0; width: 6px; height: 6px; margin-top: 7px; border-radius: 50%; background: #b38738; }
+.empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 260px; padding: 32px; text-align: center; color: var(--muted); border: 1px dashed var(--border); border-radius: 12px; }
+.empty h2 { margin: 16px 0 0; color: var(--text); font-size: 20px; }
+.empty p { max-width: 420px; margin: 10px 0 22px; }
+.field { display: grid; gap: 7px; font-size: 13px; font-weight: 600; }
+.input { width: 100%; min-height: 46px; padding: 10px 13px; border: 1px solid var(--border); border-radius: 8px; background: white; color: var(--text); font-size: 14px; font-weight: 400; }
+.input::placeholder { color: #879088; }
+.input:focus { border-color: var(--accent); }
+.eyebrow { margin: 0 0 12px; color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; }
+.statusMessage { margin: 0; padding: 12px 14px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); font-size: 13px; }
+.errorMessage { margin: 0; color: var(--danger); font-size: 13px; }
+@media (max-width: 600px) {
+  .publicHeader { padding: 20px; }
+  .headerLinks { gap: 12px; }
+  .headerLinks > a:first-child { display: none; }
+}
