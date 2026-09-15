@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { newDocument, templates, paperColors, pageSizes, type Template, type PaperColor, type PageSize, type NotebookRecord, type NotebookSummary } from "@/lib/notebook";
 import { Button } from "@/components/ui/ui";
 import { Dialog } from "@/components/ui/dialog";
+import { DisclosureMenu } from "@/components/ui/disclosure-menu";
 import { Icon } from "@/components/ui/icon";
 import ui from "@/components/ui/ui.module.css";
 import styles from "./desktop-workspace.module.css";
@@ -27,16 +28,11 @@ export function NotebookLibrary({ onNavigate }: { onNavigate: () => void }) {
   const [size, setSize] = useState<PageSize>("letterPortrait");
   const [busy, setBusy] = useState(false);
   const [legacy, setLegacy] = useState(false);
-  const [storageBytes, setStorageBytes] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<NotebookSummary | null>(null);
   const pendingCreation = useRef({ id: "", mutationId: "" });
   const pendingImport = useRef({ file: "", id: "", mutationId: "" });
   const file = useRef<HTMLInputElement>(null);
   useEffect(() => { void api<{ available: boolean }>("/api/v1/sync/legacy").then(result => setLegacy(result.available)).catch(() => undefined); }, []);
-  useEffect(() => {
-    const load = () => { void api<{ storedBytes: number }>("/api/v1/sync/usage").then(result => setStorageBytes(result.storedBytes)).catch(() => undefined); };
-    load(); const timer = setInterval(load, 60000); return () => clearInterval(timer);
-  }, []);
   useEffect(() => {
     const controller = new AbortController();
     const timeout = setTimeout(() => {
@@ -79,7 +75,18 @@ export function NotebookLibrary({ onNavigate }: { onNavigate: () => void }) {
   }
   const visible = [...notebooks].sort((a, b) => sort === "title" ? a.title.localeCompare(b.title) : b.updated_at.localeCompare(a.updated_at));
   return <>
-    <div className={styles.libraryActions}><button type="button" disabled={busy} title="New notebook" aria-label="New notebook" onClick={() => { pendingCreation.current = { id: "", mutationId: "" }; setCreating(true); }}><Icon name="plus" />New notebook</button><button type="button" disabled={busy} title="Import Mac notebook or JSON backup" aria-label="Import notebooks" onClick={() => { pendingImport.current = { file: "", id: "", mutationId: "" }; file.current?.click(); }}><Icon name="export" /></button></div>
+    <div className={styles.libraryActions}>
+      <button type="button" className={styles.newNotebook} disabled={busy} title="New notebook" aria-label="New notebook" onClick={() => { pendingCreation.current = { id: "", mutationId: "" }; setCreating(true); }}><Icon name="plus" width="17" height="17" />New notebook</button>
+      <DisclosureMenu name="Import notebooks" className={styles.importMenu} panelClassName={styles.importPanel} label={<Icon name="export" width="17" height="17" />}>
+        <p className={styles.menuLabel}>BRING YOUR NOTES</p>
+        <button type="button" disabled={busy} onClick={() => { pendingImport.current = { file: "", id: "", mutationId: "" }; file.current?.click(); }}><Icon name="book" width="16" height="16" />Import Mac / JSON file</button>
+        {legacy && <button type="button" disabled={busy} onClick={async () => {
+          setBusy(true); setError("");
+          try { let more = true; while (more) { const result = await api<{ more: boolean }>("/api/v1/sync/legacy", { method: "POST", body: "{}" }); more = result.more; } setLegacy(false); setRefresh(value => value + 1); }
+          catch (failure) { setError((failure as Error).message); } finally { setBusy(false); }
+        }}><Icon name="cloud" width="16" height="16" />Migrate older cloud notes</button>}
+      </DisclosureMenu>
+    </div>
     <input ref={file} type="file" accept=".json" hidden onChange={async event => {
       const selected = event.target.files?.[0]; if (!selected) return;
       const input = event.currentTarget;
@@ -93,21 +100,14 @@ export function NotebookLibrary({ onNavigate }: { onNavigate: () => void }) {
       } catch (failure) { setError((failure as Error).message); } finally { setBusy(false); input.value = ""; }
     }} />
     <label className={styles.search}><Icon name="search" width="15" /><input aria-label="Search notebooks" type="search" placeholder="Search notebook titles" value={query} onChange={e => setQuery(e.target.value)} /></label>
-    <div className={styles.listHeading}><span>NOTEBOOKS</span><select aria-label="Sort notebooks" value={sort} onChange={e => setSort(e.target.value)}><option value="recent">Recent</option><option value="title">Name</option></select></div>
+    <div className={styles.listHeading}><span>NOTEBOOKS <span className={styles.notebookCount} role="status" aria-label="Notebook count">{loading ? "…" : visible.length}</span></span><select aria-label="Sort notebooks" value={sort} onChange={e => setSort(e.target.value)}><option value="recent">Recent</option><option value="title">Name</option></select></div>
     {error && <p role="alert" className={ui.errorMessage}>{error} <button type="button" onClick={() => setRefresh(v => v + 1)}>Retry</button></p>}
-    {loading && <p className={styles.hint}>Loading library…</p>}
     {!loading && !error && visible.length === 0 && <div className={styles.hint}><h2>{query ? "No matching notebooks" : "Start with a blank page"}</h2><p>{query ? "Try a different search." : "Create a notebook or import your local Mac drawings."}</p></div>}
     <nav className={styles.notebookList} aria-label="Notebooks">{visible.map(notebook => <div key={notebook.id} data-selected={pathname === `/notebooks/${notebook.id}`}>
       <Link href={`/notebooks/${notebook.id}`} prefetch={false} onClick={onNavigate} aria-current={pathname === `/notebooks/${notebook.id}` ? "page" : undefined}><Icon name="book" width="17" /><span>{notebook.title}<small>{notebook.pageCount} {notebook.pageCount === 1 ? "page" : "pages"}</small></span></Link>
-      <button type="button" onClick={() => setDeleting(notebook)} aria-label={`Delete ${notebook.title}`}><Icon name="trash" width="14" /></button>
+      <button type="button" disabled={busy} onClick={() => setDeleting(notebook)} aria-label={`Delete ${notebook.title}`}><Icon name="trash" width="14" /></button>
     </div>)}</nav>
-    <p className={styles.hint} role="status">{busy ? "Saving…" : `${visible.length} notebooks · Cloud library`}</p>
-    {storageBytes !== null && <p className={styles.hint} title="Registered B2 files, including the previous version; excludes temporary staging uploads.">B2 files: {(storageBytes / 1_000_000).toFixed(2)} MB</p>}
-    {legacy && <Button variant="ghost" disabled={busy} onClick={async () => {
-      setBusy(true); setError("");
-      try { let more = true; while (more) { const result = await api<{ more: boolean }>("/api/v1/sync/legacy", { method: "POST", body: "{}" }); more = result.more; } setLegacy(false); setRefresh(value => value + 1); }
-      catch (failure) { setError((failure as Error).message); } finally { setBusy(false); }
-    }}>Move older cloud notebooks to B2</Button>}
+    {busy && <p className={styles.hint} role="status">Saving your notebook…</p>}
     <Dialog open={creating} title="New notebook" onClose={() => !busy && setCreating(false)}><form className={styles.dialogForm} onSubmit={create}>
       <label className={ui.field}>Notebook name<input className={ui.input} required maxLength={120} value={title} onChange={e => setTitle(e.target.value)} placeholder="Untitled Notebook" /></label>
       <label className={ui.field}>Paper template<select className={ui.input} value={template} onChange={e => setTemplate(e.target.value as Template)}>{templates.map(value => <option key={value}>{value}</option>)}</select></label>

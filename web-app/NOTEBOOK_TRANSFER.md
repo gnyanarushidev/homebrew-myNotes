@@ -7,10 +7,10 @@ The web workspace now uses a notebook sidebar, continuous pages on a dark canvas
 1. Build/run the updated Mac app (`zsh "desktop app/run-macos.sh"` from the repository root).
 2. Open a local notebook. In the export menu, choose **Export for web (.json)** and save the file.
 3. Sign into the web app and open `/notebooks`.
-4. Click the import icon beside **New notebook** in the sidebar and select the exported JSON file. On a small screen, open the sidebar first.
+4. Click the import icon beside **New notebook** in the sidebar, choose **Import Mac / JSON file**, and select the exported file. On a small screen, open the sidebar using the bottom-left sidebar button first.
 5. The imported notebook opens from your private cloud library. Its strokes remain editable. Reload to verify it is stored, then continue drawing on the web.
 
-The Mac export uses live committed strokes from loaded canvases and reads remaining pages from disk. It fails on missing/unreadable drawing content instead of replacing it with blank pages. Source notebooks and drawing files are not changed or deleted.
+The Mac export uses live committed strokes from loaded canvases and reads remaining pages from disk. It fails on missing/unreadable drawing content instead of replacing it with blank pages. Source notebooks and drawing files are not changed or deleted. On the web, click the notebook name at the bottom of the canvas to open naming, paper/page, PDF/JSON export and save controls.
 
 You can also select a raw Mac `.drawing.json` file from the app's `Documents/Drawings` directory. This transfers a **single page of ink**, including legacy default styles. Raw drawing files contain no notebook metadata, text, images, or paper settings; those imports start with US Letter blank paper and can be customized through **Paper & page**. The full notebook export is the preferred transfer path.
 

@@ -137,7 +137,7 @@ Desktop configuration should use the deployed API origin; the public configurati
 
 5. In B2 lifecycle settings, use a rule scoped **only to `staging/`** to expire abandoned uploads/hidden staging versions after a short grace period (recommended: hide after one day, delete one day after hiding). Published files live under `users/` and must use application reference-aware cleanup instead of age-only expiration. Successful finalized staging versions are already removed by the application.
 6. Run `npm --prefix web-app run cloud:check` (read-only). The check verifies metadata-table availability, bucket reachability/privacy and browser CORS.
-7. Build/run the current Mac sources using `zsh "desktop app/run-macos.sh"`. Sign in, then choose **Import existing local notebooks → Import and synchronize**. Original SwiftData and Documents/Drawings files remain intact. Migration ownership/progress is retained separately from removable account caches.
+7. Build/run the current Mac sources using `zsh "desktop app/run-macos.sh"`. Sign in, open the native toolbar's **cloud icon**, then choose **Import existing local notebooks → Import and synchronize**. Original SwiftData and Documents/Drawings files remain intact. Migration ownership/progress is retained separately from removable account caches.
 8. If older web notebooks exist in the legacy JSONB table, use **Move older cloud notebooks to B2** in the web sidebar. The server moves bounded batches, verifies publication, and retires only the exact acknowledged legacy rows; conflicts create copies.
 9. Sign into the web app and verify the same notebook and drawing. Edit it there, return to the Mac, and use **Sync now**. Verify a subsequent offline Mac restart and sign-out with pending edits on a test notebook.
 
@@ -160,6 +160,9 @@ Desktop configuration should use the deployed API origin; the public configurati
 
 - Automatic transfer: 16 MB uncompressed page JSON, 8 MB per image, 128 MB aggregate notebook content, and 300 pages. Transfers go directly to B2; the metadata commit stays small. Manual JSON import/export retains its earlier 2.9 MB bound.
 - Mac sync runs on opening the account, foreground, every 15 seconds and **Sync now**. Periodic attempts recover connectivity automatically. Incoming content waits for active drawing gestures and protects pending local snapshots.
+- Desktop account/sync controls live in a compact cloud-icon toolbar menu. Sync status, storage usage and import reports are available through **Sync details…**; they do not occupy a separate full-width bar above the notebook canvas.
+- Open web notebooks have no horizontal top header bars. The drawing palette floats over the full-height canvas, with undo/redo alongside the drawing tools. A compact bottom notebook menu contains naming, paper/page controls, PDF/JSON export and manual save; page navigation and zoom remain in the bottom control strip.
+- The web sidebar footer is a single account menu. Account settings, invitations, storage usage and sign-out appear on demand, while notebook counts stay beside the library heading. Menus support Escape/outside-click dismissal and adapt to small screens.
 - Web cloud refresh runs on foreground/every 15 seconds while clean; unfinished gestures and dirty drafts are protected. New remote content invalidates stale local undo history.
 - Global web search currently searches notebook titles. Page text stays in B2; Mac search can still search downloaded page text locally.
 - Clients merge non-overlapping changes using stored baselines. Whole-notebook conflict copies are reserved for incompatible edits or an unavailable historical baseline. Deleted notebooks keep small tombstones; deleted file content becomes cleanup-eligible once unreferenced.

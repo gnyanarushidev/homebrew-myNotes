@@ -68,6 +68,7 @@ test("web receives desktop-style cloud changes on foreground without overwriting
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect(page.getByLabel("Notebook title")).toHaveValue("Changed from another device");
   await page.route("**/api/v1/sync/commit", route => route.fulfill({ status: 503, contentType: "application/json", body: '{"error":"Save interrupted"}' }));
+  await page.getByLabel("Notebook menu", { exact: true }).click();
   await page.getByLabel("Notebook title").fill("Pending local title");
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect(page.getByLabel("Notebook title")).toHaveValue("Pending local title");

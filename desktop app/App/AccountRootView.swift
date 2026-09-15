@@ -33,21 +33,44 @@ private struct AccountWorkspaceView: View {
     @ObservedObject var engine: DesktopSyncEngine
     @State private var importing = false
     @State private var importError = ""
+    @State private var showingSyncDetails = false
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Image(systemName: engine.lastError.isEmpty ? "icloud" : "icloud.slash")
-                VStack(alignment: .leading) { Text(engine.account.email).font(.caption); Text(engine.status).font(.caption2).foregroundStyle(.secondary) }
-                if let bytes = engine.storageBytes { Text("B2 files: \(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file))").font(.caption2).foregroundStyle(.secondary) }
-                Spacer()
-                Button(engine.importing ? "Importing…" : "Import existing local notebooks") { importing = true }.disabled(engine.importing)
-                Button("Sync now") { Task { try? await engine.synchronize() } }.disabled(engine.running)
-                Button("Sign out") { Task { await session.signOut() } }
-            }.padding(10).disabled(session.signingOut)
-            if !engine.lastError.isEmpty { Text(engine.lastError).font(.caption).foregroundStyle(.red).textSelection(.enabled).padding(6) }
-            if !engine.migrationSummary.isEmpty { Text(engine.migrationSummary).font(.caption).textSelection(.enabled).padding(6) }
-            Divider()
-            LibraryView().modelContainer(engine.container).disabled(session.signingOut)
+        LibraryView()
+        .modelContainer(engine.container)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .disabled(session.signingOut)
+        .toolbar {
+            ToolbarItem(placement: .automatic) {
+                Menu {
+                    Text(engine.account.email)
+                    Text(engine.status)
+                    Divider()
+                    Button("Sync now") { Task { try? await engine.synchronize() } }.disabled(engine.running)
+                    Button(engine.importing ? "Importing…" : "Import existing local notebooks") { importing = true }.disabled(engine.importing)
+                    Button("Sync details…") { showingSyncDetails = true }
+                    Divider()
+                    Button("Sign out") { Task { await session.signOut() } }
+                } label: {
+                    Image(systemName: engine.lastError.isEmpty ? "icloud" : "icloud.slash")
+                }
+                .help(engine.lastError.isEmpty ? engine.status : "Sync needs attention — open for details")
+                .accessibilityLabel("Account and sync")
+                .disabled(session.signingOut)
+            }
+        }
+        .sheet(isPresented: $showingSyncDetails) {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Account and sync").font(.title2.bold())
+                Text(engine.account.email)
+                Text(engine.status).foregroundStyle(.secondary)
+                if let bytes = engine.storageBytes { Text("B2 files: \(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file))") }
+                if !engine.lastError.isEmpty { Text(engine.lastError).foregroundStyle(.red).textSelection(.enabled) }
+                if !engine.migrationSummary.isEmpty { Text(engine.migrationSummary).textSelection(.enabled) }
+                HStack { Spacer(); Button("Done") { showingSyncDetails = false }.keyboardShortcut(.defaultAction) }
+            }
+            .padding(24)
+            .frame(width: 380)
+            .fixedSize(horizontal: false, vertical: true)
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in Task { try? await engine.synchronize() } }
         .confirmationDialog("Import local notebooks into \(engine.account.email)?", isPresented: $importing) {

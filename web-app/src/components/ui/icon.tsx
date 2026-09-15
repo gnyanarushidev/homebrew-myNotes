@@ -31,6 +31,13 @@ const paths = {
   redo: "M21 10H10a6 6 0 0 0 0 12m11-12-5-5m5 5-5 5",
   export: "M12 16V2m-4 4 4-4 4 4M4 12v9h16v-9",
   sidebar: "M3 4h18v16H3ZM9 4v16",
+  chevronLeft: "m14 6-6 6 6 6",
+  chevronRight: "m10 6 6 6-6 6",
+  chevronDown: "m6 9 6 6 6-6",
+  chevrons: "m8 8 4-4 4 4m-8 8 4 4 4-4",
+  settings: "M4 7h10m4 0h2M4 17h2m4 0h10M18 7a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM10 17a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z",
+  logout: "M9 4H4v16h5m5-4 4-4-4-4m-6 4h12",
+  download: "M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4",
 } as const;
 
 export type IconName = keyof typeof paths;

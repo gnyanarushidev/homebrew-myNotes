@@ -51,7 +51,7 @@ test("desktop-style drawing tools save editable ink, shapes, history, and PDF to
   expect(record.document.pages[0].strokes[1].points[0].y).toBeCloseTo(210, 0);
   await page.screenshot({ path: testInfo.outputPath("desktop-web-editor.png"), fullPage: true });
   const downloadPromise = page.waitForEvent("download");
-  await page.getByLabel("Export notebook", { exact: true }).click();
+  await page.getByLabel("Notebook menu", { exact: true }).click();
   await page.getByRole("button", { name: "Export PDF", exact: true }).click();
   const download = await downloadPromise;
   const stream = (await download.createReadStream())!;

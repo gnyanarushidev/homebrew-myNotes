@@ -31,26 +31,34 @@ test("notebooks persist text, pages, paper overrides, and JSON backups across re
   await expect(page.getByLabel("Notebook title")).toHaveValue("Weekend sketches");
   await page.getByRole("button", { name: "Text", exact: true }).click();
   await page.getByLabel("Page 1 text").fill("A searchable thought about mountains.");
-  await page.getByRole("button", { name: "Add page", exact: true }).first().click();
-  await expect(page.getByRole("status").filter({ hasText: "Page 2 of 2" })).toBeVisible();
+  await page.getByLabel("Notebook menu", { exact: true }).click();
+  await page.getByRole("button", { name: "Add page", exact: true }).last().click();
+  await expect(page.getByRole("status").filter({ hasText: "Page 2 of 2" })).toHaveText("Page 2 of 2");
+  await page.getByLabel("Notebook menu", { exact: true }).click();
   await page.getByRole("button", { name: "Paper & page" }).click();
   await page.getByLabel("Use notebook style").uncheck();
   await page.getByRole("main").getByLabel("Paper template").selectOption("grid");
   await page.getByRole("main").getByLabel("Paper color").selectOption("cream");
   await page.getByRole("main").getByLabel("Page size").selectOption("a4Portrait");
+  await page.getByRole("dialog", { name: "Paper & page" }).getByRole("button", { name: "Close dialog" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Saved to cloud" })).toBeVisible();
   const notebookUrl = page.url();
   await page.reload();
+  await page.getByLabel("Notebook menu", { exact: true }).click();
   await page.getByRole("button", { name: "Paper & page" }).click();
   await expect(page.getByRole("main").getByLabel("Paper template")).toHaveValue("dots");
+  await page.getByRole("dialog", { name: "Paper & page" }).getByRole("button", { name: "Close dialog" }).click();
   await page.getByRole("button", { name: "Text", exact: true }).click();
   await expect(page.getByLabel("Page 1 text")).toHaveValue("A searchable thought about mountains.");
   await page.getByLabel("Current page").selectOption({ value: "1" });
+  await page.getByLabel("Notebook menu", { exact: true }).click();
+  await page.getByRole("button", { name: "Paper & page" }).click();
   await expect(page.getByRole("main").getByLabel("Paper template")).toHaveValue("grid");
   await expect(page.getByRole("main").getByLabel("Paper color")).toHaveValue("cream");
   await expect(page.getByRole("main").getByLabel("Page size")).toHaveValue("a4Portrait");
+  await page.getByRole("dialog", { name: "Paper & page" }).getByRole("button", { name: "Close dialog" }).click();
   const downloadPromise = page.waitForEvent("download");
-  await page.getByLabel("Export notebook", { exact: true }).click();
+  await page.getByLabel("Notebook menu", { exact: true }).click();
   await page.getByRole("button", { name: "Export JSON" }).click();
   const download = await downloadPromise;
   const stream = await download.createReadStream();
@@ -58,6 +66,7 @@ test("notebooks persist text, pages, paper overrides, and JSON backups across re
   for await (const chunk of stream!) chunks.push(chunk);
   const backup = Buffer.concat(chunks);
   expect(JSON.parse(backup.toString())).toMatchObject({ schemaVersion: 1, title: "Weekend sketches", pages: [{ text: "A searchable thought about mountains." }, { size: "a4Portrait" }] });
+  await page.getByLabel("Account menu", { exact: true }).click();
   await page.getByRole("navigation", { name: "Workspace navigation" }).getByRole("link", { name: "Notebooks", exact: true }).click();
   await page.getByRole("searchbox", { name: "Search notebooks" }).fill("Weekend");
   await expect(page.getByRole("link", { name: /Weekend sketches/ })).toBeVisible();
@@ -135,7 +144,7 @@ test("admin invitations send, resend, reject duplicates, and revoke existing ses
 
 test.describe("mobile layout", () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-  test("private pages fit the viewport and workspace navigation is usable", async ({ page, request, context }) => {
+  test("private pages fit the viewport and workspace navigation is usable", async ({ page, request, context }, testInfo) => {
     await installSession(context, request);
     const id = crypto.randomUUID();
     await context.request.post("/api/notebooks", { headers: mutationHeaders, data: { id, document: newDocument("Mobile notebook"), mutationId: crypto.randomUUID() } });
@@ -144,7 +153,15 @@ test.describe("mobile layout", () => {
       if (path.includes(id)) await expect(page.getByRole("application", { name: "Drawing page 1" })).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth), path).toBeLessThanOrEqual(390);
     }
+    await page.screenshot({ path: testInfo.outputPath("mobile-canvas.png"), fullPage: true });
     await page.getByRole("button", { name: "Toggle workspace navigation" }).click();
+    await expect(page.getByRole("navigation", { name: "Notebooks", exact: true }).getByRole("link", { name: /Mobile notebook/ })).toBeVisible();
+    await page.getByLabel("Account menu", { exact: true }).click();
+    await expect(page.getByRole("link", { name: "Account settings", exact: true })).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath("mobile-account-menu.png"), fullPage: true });
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("link", { name: "Account settings", exact: true })).not.toBeVisible();
+    await page.getByLabel("Account menu", { exact: true }).click();
     await page.getByRole("navigation", { name: "Workspace navigation" }).getByRole("link", { name: "Notebooks", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Your notebooks" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Toggle workspace navigation" })).toHaveAttribute("aria-expanded", "false");
