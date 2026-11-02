@@ -91,3 +91,9 @@
   .cloudLabel { display: none; }
   .windowBar { padding: 0 12px; }
 }
+
+.folderHeading { display: flex; align-items: center; gap: 7px; width: calc(100% - 18px); margin: 14px 9px 6px; padding: 2px 0; border: 0; background: transparent; cursor: pointer; text-align: left; color: #8590a1; font-size: 10px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; }
+.folderHeading svg { flex-shrink: 0; }
+.folderHeading span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.folderHeading small { font-size: 10px; letter-spacing: 0; color: #6f7a8c; }
+.folderHeading:hover { color: #c1c9d6; }

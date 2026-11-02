@@ -7,13 +7,18 @@ import { MAX_ASSET_BYTES, MAX_PAGE_BYTES, pageContentSchema, type CloudFile } fr
 import { serviceClient } from "./service";
 import { HttpError } from "./http";
 
+// One client per credential set: building a client per call discards its connection pool.
+let cached: { signature: string; client: S3Client } | undefined;
+
 export function b2() {
   const { B2_ENDPOINT: endpoint, B2_REGION: region, B2_BUCKET_NAME: bucket, B2_APPLICATION_KEY_ID: accessKeyId, B2_APPLICATION_KEY: secretAccessKey } = process.env;
   if (!endpoint || !region || !bucket || !accessKeyId || !secretAccessKey) throw new HttpError(503, "Configure the private B2 bucket and server application key.");
   const url = new URL(endpoint);
   if (url.protocol !== "https:" && !["127.0.0.1", "localhost"].includes(url.hostname)) throw new HttpError(503, "Invalid B2 endpoint.");
-  const client = new S3Client({ endpoint, region, forcePathStyle: true, maxAttempts: 1, credentials: { accessKeyId, secretAccessKey }, requestChecksumCalculation: "WHEN_REQUIRED", responseChecksumValidation: "WHEN_REQUIRED" });
-  return { client, bucket };
+  const signature = [endpoint, region, accessKeyId, secretAccessKey].join("\n");
+  // Transient B2 errors are common; retry a few times before failing a sync.
+  cached = cached?.signature === signature ? cached : { signature, client: new S3Client({ endpoint, region, forcePathStyle: true, maxAttempts: 3, credentials: { accessKeyId, secretAccessKey }, requestChecksumCalculation: "WHEN_REQUIRED", responseChecksumValidation: "WHEN_REQUIRED" }) };
+  return { client: cached.client, bucket };
 }
 export const sha256 = (data: Uint8Array | string) => createHash("sha256").update(data).digest("hex");
 export function stableId(value: string) {
@@ -104,8 +109,8 @@ export async function cleanupObjects(owner: string) {
   const service = serviceClient();
   const { data, error } = await service.rpc("cloud_cleanup_candidates", { p_owner: owner });
   if (error) throw new HttpError(503, "Unable to inspect obsolete cloud files.");
-  const { client, bucket } = b2(); let removed = 0;
-  for (const file of data ?? []) {
+  const { client, bucket } = b2(); let removed = 0, failed: unknown;
+  for (const file of data ?? []) try {
     let versions = file.version_id ? [file.version_id as string] : [];
     if (!file.version_id) {
       const listed = await client.send(new ListObjectVersionsCommand({ Bucket: bucket, Prefix: file.key, MaxKeys: 1000 }));
@@ -119,6 +124,8 @@ export async function cleanupObjects(owner: string) {
     const result = await service.from("cloud_objects").delete().eq("owner_id", owner).eq("key", file.key).eq("state", "deleting");
     if (result.error) throw new HttpError(503, "Cleanup metadata could not be completed. Retry cleanup.");
     removed++;
-  }
+  } catch (error) { failed ??= error; }
+  // Everything that could be removed was; surface the first failure so the caller retries the rest.
+  if (failed) throw failed;
   return { removed };
 }

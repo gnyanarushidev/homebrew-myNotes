@@ -12,6 +12,7 @@ import { WorkspaceSidebarToggle } from "./workspace-shell";
 import type { EditorTool, Selection } from "./page-canvas";
 import { useNotebook } from "./use-notebook";
 import { exportDocument, exportPDF } from "./transfer";
+import { ShareContent } from "./share-dialog";
 import styles from "./notebook-editor.module.css";
 
 const PageCanvas = dynamic(() => import("./page-canvas"), { ssr: false });
@@ -19,10 +20,11 @@ const PageCanvas = dynamic(() => import("./page-canvas"), { ssr: false });
 export function NotebookEditor({ userId, notebookId }: { userId: string; notebookId: string }) {
   const notebook = useNotebook(userId, notebookId);
   if (!notebook.document) return <EmptyState title={notebook.error ? "Unable to open this notebook" : "Loading notebook…"}>{notebook.error && <p role="alert">{notebook.error}</p>}<ActionLink href="/notebooks">Back to notebooks</ActionLink></EmptyState>;
-  return <NotebookSurface {...notebook} document={notebook.document} />;
+  return <NotebookSurface {...notebook} notebookId={notebookId} document={notebook.document} />;
 }
 
-function NotebookSurface({ document, update, status, error, conflict, copying, save, keepBoth, editing, remoteGeneration }: Omit<ReturnType<typeof useNotebook>, "document"> & { document: NotebookDocument }) {
+function NotebookSurface({ notebookId, document, update, status, error, conflict, copying, save, keepBoth, editing, remoteGeneration }: Omit<ReturnType<typeof useNotebook>, "document"> & { notebookId: string; document: NotebookDocument }) {
+  const [sharing, setSharing] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [zoom, setZoom] = useState(85);
   const [tool, setTool] = useState<EditorTool>("pen");
@@ -125,6 +127,7 @@ function NotebookSurface({ document, update, status, error, conflict, copying, s
     else if (!event.metaKey && !event.ctrlKey && !event.altKey) { const next = ({ p: "pen", "2": "pencil", h: "highlighter", e: "eraser", v: "lasso", r: "rectangle", c: "circle", l: "line", a: "arrow", " ": "hand", t: "text" } as Record<string, EditorTool>)[event.key.toLowerCase()]; if (next) { event.preventDefault(); choose(next); } }
   }}>
     <h1 className="sr-only">Notebook editor</h1>
+    <Dialog open={sharing} title="Share notebook" onClose={() => setSharing(false)}>{sharing && <ShareContent notebookId={notebookId} />}</Dialog>
     <Dialog open={settings} title="Paper & page" onClose={() => setSettings(false)}>
       <div className={styles.paperSettings}>
         <p>Customize page {currentPage + 1} or use the notebook’s default paper.</p>
@@ -162,6 +165,7 @@ function NotebookSurface({ document, update, status, error, conflict, copying, s
           <button type="button" disabled={exporting} onClick={() => void pdf()}><Icon name="download" />Export PDF</button>
           <button type="button" disabled={exporting} onClick={() => void pdf(true)}><Icon name="download" />Current page as PDF</button>
           <button type="button" onClick={() => exportDocument(document)}><Icon name="export" />Export JSON</button>
+          <button type="button" onClick={() => setSharing(true)}><Icon name="cloud" />Share link</button>
           <span className={styles.menuDivider} />
           <button type="button" onClick={fit}><Icon name="monitor" />Fit page</button>
           <button type="button" onClick={() => changeZoom(100)}><Icon name="monitor" />Actual size</button>

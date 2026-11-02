@@ -167,3 +167,26 @@ test.describe("mobile layout", () => {
     await expect(page.getByRole("button", { name: "Toggle workspace navigation" })).toHaveAttribute("aria-expanded", "false");
   });
 });
+
+test("folders group the library and can be collapsed and expanded", async ({ page, request, context }) => {
+  await installSession(context, request, "?user=invited");
+  for (const [title, folder] of [["Kinematics", "Physics"], ["Organic reactions", "Chemistry"], ["Loose thoughts", undefined]] as const) {
+    const created = await context.request.post("/api/notebooks", { headers: mutationHeaders, data: { id: crypto.randomUUID(), document: newDocument(title, "blank", "white", "letterPortrait", folder), mutationId: crypto.randomUUID() } });
+    expect(created.status()).toBe(201);
+  }
+  await page.goto("/notebooks");
+  const physics = page.getByRole("button", { name: /Physics/ });
+  await expect(physics).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("link", { name: /Kinematics/ })).toBeVisible();
+  await physics.click();
+  await expect(physics).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByRole("link", { name: /Kinematics/ })).toBeHidden();
+  await expect(page.getByRole("link", { name: /Organic reactions/ })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("button", { name: /Physics/ })).toHaveAttribute("aria-expanded", "false");
+  await page.getByRole("searchbox", { name: "Search notebooks" }).fill("Kinema");
+  await expect(page.getByRole("link", { name: /Kinematics/ })).toBeVisible();
+  await page.getByRole("searchbox", { name: "Search notebooks" }).fill("");
+  await page.getByRole("button", { name: /Physics/ }).click();
+  await expect(page.getByRole("link", { name: /Kinematics/ })).toBeVisible();
+});

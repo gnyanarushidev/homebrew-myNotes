@@ -49,7 +49,7 @@ export function SetupOverview() {
           </span>
           MyNotes
         </Link>
-        <span className={styles.badge}>Cloud notebook foundation</span>
+        <span className={styles.badge}>Cloud notebooks</span>
       </header>
 
       <main id="main-content">
@@ -114,7 +114,7 @@ export function SetupOverview() {
       </main>
 
       <footer className={styles.footer}>
-        <span>MyNotes · Web foundation</span>
+        <span>MyNotes · Web</span>
         <span>Next.js + Supabase + Backblaze B2</span>
       </footer>
     </div>

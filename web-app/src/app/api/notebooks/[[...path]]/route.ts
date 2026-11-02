@@ -22,7 +22,7 @@ export async function GET(request: NextRequest, context: Context) {
       return auth.finish(apiJson(result));
     }
     const rows = await listCloud(auth.user.id, (request.nextUrl.searchParams.get("search") ?? "").slice(0, 200));
-    return auth.finish(apiJson(rows.map(row => ({ id: row.id, title: row.manifest.title, template: row.manifest.template, color: row.manifest.color, pageCount: row.manifest.pages.length, updated_at: row.updated_at, text: "" }))));
+    return auth.finish(apiJson(rows.map(row => ({ id: row.id, title: row.manifest.title, ...(row.manifest.folder ? { folder: row.manifest.folder } : {}), template: row.manifest.template, color: row.manifest.color, pageCount: row.manifest.pages.length, updated_at: row.updated_at, text: "" }))));
   } catch (error) { return apiFailure(error, request); }
 }
 async function write(request: NextRequest, context: Context, creating: boolean) {
@@ -38,6 +38,19 @@ async function write(request: NextRequest, context: Context, creating: boolean) 
 }
 export const POST = (request: NextRequest, context: Context) => write(request, context, true);
 export const PUT = (request: NextRequest, context: Context) => write(request, context, false);
+// Moves a notebook between folders without re-uploading any pages.
+export async function PATCH(request: NextRequest, context: Context) {
+  try {
+    const auth = await authorized(request), id = await notebookId(context);
+    const input = z.object({ revision: z.number().int().positive(), mutationId: z.uuid(), folder: z.string().trim().min(1).max(80).nullable() }).safeParse(await readJson(request, 2048));
+    if (!id || !input.success) throw new HttpError(400, "A notebook, revision and folder are required.");
+    const record = await getCloud(auth.user.id, id);
+    const manifest = structuredClone(record.manifest);
+    if (input.data.folder) manifest.folder = input.data.folder; else delete manifest.folder;
+    const receipt = await commitCloud(auth.user.id, { id, operationId: input.data.mutationId, baseRevision: input.data.revision, manifest, deleted: false, keepBoth: false });
+    return auth.finish(apiJson(receipt));
+  } catch (error) { return apiFailure(error, request); }
+}
 export async function DELETE(request: NextRequest, context: Context) {
   try {
     const auth = await authorized(request), id = await notebookId(context);

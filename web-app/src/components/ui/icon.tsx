@@ -1,6 +1,7 @@
 import type { SVGProps } from "react";
 
 const paths = {
+  folder: "M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6Z",
   book: "M4 3h13a3 3 0 0 1 3 3v15H7a3 3 0 0 1-3-3V3Zm0 14h16M8 3v14M11 7h5",
   arrow: "M5 12h14m-5-5 5 5-5 5",
   back: "M19 12H5m5-5-5 5 5 5",

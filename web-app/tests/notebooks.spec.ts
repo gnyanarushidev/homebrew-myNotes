@@ -47,3 +47,19 @@ test("retries are idempotent, competing revisions conflict, and deletion checks 
   expect((await context.request.delete(`/api/notebooks/${id}`, { headers: mutationHeaders, data: { revision: 2 } })).status()).toBe(200);
   expect((await context.request.get(`/api/notebooks/${id}`)).status()).toBe(404);
 });
+
+test("notebooks can be filed into folders and moved without re-uploading pages", async ({ context, request }) => {
+  await installSession(context, request, "?user=invited");
+  const id = crypto.randomUUID();
+  const created = await context.request.post("/api/notebooks", { headers: mutationHeaders, data: { id, document: newDocument("Physics notes", "blank", "white", "letterPortrait", "Physics"), mutationId: crypto.randomUUID() } });
+  expect(created.status()).toBe(201);
+  expect((await (await context.request.get("/api/notebooks")).json())[0].folder).toBe("Physics");
+  const moved = await context.request.patch(`/api/notebooks/${id}`, { headers: mutationHeaders, data: { revision: 1, mutationId: crypto.randomUUID(), folder: "  Chemistry  " } });
+  expect(moved.status()).toBe(200);
+  expect((await moved.json()).revision).toBe(2);
+  expect((await (await context.request.get(`/api/notebooks/${id}`)).json()).document.folder).toBe("Chemistry");
+  expect((await context.request.patch(`/api/notebooks/${id}`, { headers: mutationHeaders, data: { revision: 1, mutationId: crypto.randomUUID(), folder: null } })).status()).toBe(409);
+  const cleared = await context.request.patch(`/api/notebooks/${id}`, { headers: mutationHeaders, data: { revision: 2, mutationId: crypto.randomUUID(), folder: null } });
+  expect(cleared.status()).toBe(200);
+  expect((await (await context.request.get("/api/notebooks")).json())[0].folder).toBeUndefined();
+});

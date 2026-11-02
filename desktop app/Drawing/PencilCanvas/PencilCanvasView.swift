@@ -436,6 +436,7 @@ final class MacCanvasNSView: NSView {
             dragMode = .erase
         } else {
             dragMode = .draw
+            NSEvent.isMouseCoalescingEnabled = false
         }
         syncCursorState()
         needsDisplay = true
@@ -450,7 +451,15 @@ final class MacCanvasNSView: NSView {
         switch dragMode {
         case .draw:
             if continueInkIfNeeded(at: pagePoint, event: event, ending: false) { return }
+            if Self.isFreehand(activeInkTool), let last = activePoints.last,
+               hypot(pagePoint.x - last.x, pagePoint.y - last.y) < 0.4 / max(currentScale, 0.05) {
+                return
+            }
             activePoints.append(MacPoint(pagePoint))
+            if Self.isFreehand(activeInkTool) {
+                invalidateInk()
+                return
+            }
         case .erase:
             activePoints.append(MacPoint(pagePoint))
             eraseUnder([MacPoint(pagePoint)])
@@ -473,6 +482,7 @@ final class MacCanvasNSView: NSView {
     }
 
     override func mouseUp(with event: NSEvent) {
+        NSEvent.isMouseCoalescingEnabled = true
         if let forwardedInkView {
             forwardedInkView.mouseUp(with: event)
             self.forwardedInkView = nil
@@ -922,7 +932,22 @@ final class MacCanvasNSView: NSView {
         guard points.count > 1 else { return }
         let path = NSBezierPath()
         path.move(to: points[0].cgPoint)
-        for point in points.dropFirst() { path.line(to: point.cgPoint) }
+        if Self.isFreehand(tool), points.count > 2 {
+            // Quadratic curves through segment midpoints turn the sampled polyline into a
+            // smooth line without moving any stored point.
+            for index in 1..<(points.count - 1) {
+                let control = points[index].cgPoint
+                let next = points[index + 1].cgPoint
+                path.curve(
+                    to: CGPoint(x: (control.x + next.x) / 2, y: (control.y + next.y) / 2),
+                    controlPoint1: Self.cubicControl(from: path.currentPoint, to: control, fraction: 2.0 / 3.0),
+                    controlPoint2: Self.cubicControl(from: CGPoint(x: (control.x + next.x) / 2, y: (control.y + next.y) / 2), to: control, fraction: 2.0 / 3.0)
+                )
+            }
+            path.line(to: points[points.count - 1].cgPoint)
+        } else {
+            for point in points.dropFirst() { path.line(to: point.cgPoint) }
+        }
         path.lineCapStyle = .round
         path.lineJoinStyle = .round
 
@@ -930,6 +955,35 @@ final class MacCanvasNSView: NSView {
         path.lineWidth = CGFloat(appearance.width)
         appearance.nsColor.setStroke()
         path.stroke()
+    }
+
+    private static func isFreehand(_ tool: MacDrawingTool) -> Bool {
+        tool == .pen || tool == .pencil || tool == .highlighter
+    }
+
+    /// Cubic control point equal to a quadratic control point, so a quadratic curve can use NSBezierPath.
+    private static func cubicControl(from end: CGPoint, to control: CGPoint, fraction: CGFloat) -> CGPoint {
+        CGPoint(x: end.x + (control.x - end.x) * fraction, y: end.y + (control.y - end.y) * fraction)
+    }
+
+    /// Repaints only the area around the newest points; the full page is redrawn on gesture end.
+    private func invalidateInk(lastPointCount: Int = 4) {
+        guard let camera, let style = activeInkStyle else { needsDisplay = true; return }
+        let recent = activePoints.suffix(lastPointCount)
+        guard let first = recent.first else { return }
+        var minX = first.x, maxX = first.x, minY = first.y, maxY = first.y
+        for point in recent {
+            minX = min(minX, point.x); maxX = max(maxX, point.x)
+            minY = min(minY, point.y); maxY = max(maxY, point.y)
+        }
+        let scale = camera.viewport.scale
+        let pad = CGFloat(style.width) * scale + 6
+        setNeedsDisplay(CGRect(
+            x: camera.viewport.offset.width + (documentOrigin.x + minX) * scale - pad,
+            y: camera.viewport.offset.height + (documentOrigin.y + minY) * scale - pad,
+            width: (maxX - minX) * scale + pad * 2,
+            height: (maxY - minY) * scale + pad * 2
+        ))
     }
 
     private func drawLasso(_ points: [CGPoint]) {

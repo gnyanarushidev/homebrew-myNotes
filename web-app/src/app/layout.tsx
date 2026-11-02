@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     template: "%s | MyNotes",
   },
   description:
-    "The foundation for your private notebooks, on the web and on your Mac.",
+    "Your private notebooks, on the web and on your Mac.",
   robots: { index: false, follow: false },
   referrer: "no-referrer",
 };

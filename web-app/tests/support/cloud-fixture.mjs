@@ -5,10 +5,11 @@ import { randomUUID } from "node:crypto";
 export const database = new PGlite();
 await database.exec("create schema auth; create table auth.users(id uuid primary key); create role anon; create role authenticated; create role service_role bypassrls;");
 await database.exec(await readFile(new URL("../../supabase/migrations/002_cloud_storage.sql", import.meta.url), "utf8"));
+await database.exec(await readFile(new URL("../../supabase/migrations/003_share_links.sql", import.meta.url), "utf8"));
 const objects = new Map();
 export async function resetCloud(ids) {
   objects.clear();
-  await database.exec("truncate cloud_references, cloud_objects, cloud_notebooks, cloud_operations, cloud_accounts, auth.users cascade");
+  await database.exec("truncate cloud_shares, cloud_references, cloud_objects, cloud_notebooks, cloud_operations, cloud_accounts, auth.users cascade");
   for (const id of new Set(ids)) await database.query("insert into auth.users(id) values ($1)", [id]);
 }
 export async function addCloudUser(id) { await database.query("insert into auth.users(id) values ($1) on conflict do nothing", [id]); }
@@ -45,7 +46,7 @@ export async function cloudRequest(request, response, url, raw) {
       send(200, rows); return true;
     }
     const table = url.pathname.split("/").pop();
-    if (!["cloud_accounts", "cloud_notebooks", "cloud_operations", "cloud_objects", "cloud_references"].includes(table)) throw new Error("Unknown fixture table");
+    if (!["cloud_accounts", "cloud_notebooks", "cloud_operations", "cloud_objects", "cloud_references", "cloud_shares"].includes(table)) throw new Error("Unknown fixture table");
     const identifier = value => { if (!/^[a-z_][a-z0-9_]*$/.test(value)) throw new Error("Invalid column"); return `"${value}"`; };
     const fields = url.searchParams.get("select") ?? "*";
     const select = fields === "*" ? "*" : fields.split(",").map(identifier).join(",");

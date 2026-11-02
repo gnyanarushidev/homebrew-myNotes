@@ -200,7 +200,7 @@ struct CloudUsage: Decodable { let storedBytes: Int64 }
     }
     private func prepare(_ pending: PendingCloudOperation, forceUpload: Bool = false) async throws -> CloudManifest {
         guard let document = pending.document else { return journal.baselines[pending.id]?.manifest ?? CloudManifest(title: "Deleted notebook", template: "blank", color: "white", pages: []) }
-        var manifest = CloudManifest(title: document.title, template: document.template, color: document.color, pages: [])
+        var manifest = CloudManifest(title: document.title, folder: document.folder, template: document.template, color: document.color, pages: [])
         let baseline = journal.baselines[pending.id]
         for (index, page) in document.pages.enumerated() {
             try checkActive(); status = "Syncing page \(index + 1) of \(document.pages.count)…"
@@ -348,7 +348,7 @@ struct CloudUsage: Decodable { let storedBytes: Int64 }
             let image = try await page.image.mapAsync { try await self.bytes($0, urls: urls) }
             pages.append(LocalCloudPage(id: page.id, size: page.size, template: page.template, color: page.color, inheritsStyle: page.inheritsStyle, content: content, image: image, imageKind: page.image?.kind))
         }
-        return LocalCloudDocument(title: manifest.title, template: manifest.template, color: manifest.color, pages: pages)
+        return LocalCloudDocument(title: manifest.title, folder: manifest.folder, template: manifest.template, color: manifest.color, pages: pages)
     }
     private func adopt(_ document: LocalCloudDocument, record: CloudNotebook) throws {
         let notebook = try CloudCodec.apply(document, id: record.id, context: container.mainContext, directory: directory)

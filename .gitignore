@@ -28,3 +28,5 @@ coverage/
 npm-debug.log*
 test-results/
 playwright-report/
+.vercel
+.env*

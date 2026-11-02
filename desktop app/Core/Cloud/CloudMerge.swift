@@ -11,7 +11,7 @@ enum CloudMerge {
         throw Conflict()
     }
     static func normalized(_ document: LocalCloudDocument) throws -> LocalCloudDocument {
-        LocalCloudDocument(title: document.title.trimmingCharacters(in: .whitespacesAndNewlines), template: document.template, color: document.color, pages: try document.pages.map { page in
+        LocalCloudDocument(title: document.title.trimmingCharacters(in: .whitespacesAndNewlines), folder: Notebook.cleanFolder(document.folder), template: document.template, color: document.color, pages: try document.pages.map { page in
             LocalCloudPage(id: page.id.lowercased(), size: page.size, template: page.template, color: page.color, inheritsStyle: page.inheritsStyle,
                 content: SharedPageContent(text: page.content.text, strokes: try page.content.strokes.map { SharedStroke(try $0.native()) }), image: page.image, imageKind: page.imageKind)
         })
@@ -44,7 +44,7 @@ enum CloudMerge {
                 image: try value(original.image, left.image, right.image), imageKind: try value(original.imageKind, left.imageKind, right.imageKind))
         }
         guard !pages.isEmpty, pages.count <= 300 else { throw Conflict() }
-        return LocalCloudDocument(title: try value(b.title, l.title, r.title), template: try value(b.template, l.template, r.template), color: try value(b.color, l.color, r.color), pages: pages)
+        return LocalCloudDocument(title: try value(b.title, l.title, r.title), folder: try value(b.folder, l.folder, r.folder), template: try value(b.template, l.template, r.template), color: try value(b.color, l.color, r.color), pages: pages)
     }
 }
 #endif

@@ -32,7 +32,7 @@ export const pageSchema = z.object({
   image: imageSchema.optional(),
 });
 export const documentSchema = z.object({
-  schemaVersion: z.literal(1), title: z.string().trim().min(1).max(120),
+  schemaVersion: z.literal(1), title: z.string().trim().min(1).max(120), folder: z.string().trim().min(1).max(80).optional(),
   template: z.enum(templates), color: z.enum(paperColors),
   pages: z.array(pageSchema).min(1).max(300),
 }).superRefine((document, context) => {
@@ -50,15 +50,15 @@ export type Stroke = z.infer<typeof strokeSchema>;
 export type NotePage = z.infer<typeof pageSchema>;
 export type NotebookDocument = z.infer<typeof documentSchema>;
 export type NotebookRecord = { id: string; document: NotebookDocument; revision: number; mutation_id: string; created_at: string; updated_at: string; storage?: import("./cloud").CloudManifest };
-export type NotebookSummary = { id: string; title: string; template: Template; color: PaperColor; pageCount: number; updated_at: string; text: string };
+export type NotebookSummary = { id: string; title: string; folder?: string; template: Template; color: PaperColor; pageCount: number; updated_at: string; text: string };
 export type Account = { id: string; email: string; isAdmin: boolean };
 
 export function dimensions(size: PageSize) { return size === "a4Portrait" ? { width: 595, height: 842 } : { width: 612, height: 792 }; }
 export function newPage(size: PageSize = "letterPortrait"): NotePage {
   return { id: crypto.randomUUID(), template: "blank", color: "white", size, inheritsStyle: true, strokes: [], text: "" };
 }
-export function newDocument(title = "Untitled Notebook", template: Template = "blank", color: PaperColor = "white", size: PageSize = "letterPortrait"): NotebookDocument {
-  return { schemaVersion: 1, title, template, color, pages: [newPage(size)] };
+export function newDocument(title = "Untitled Notebook", template: Template = "blank", color: PaperColor = "white", size: PageSize = "letterPortrait", folder?: string): NotebookDocument {
+  return { schemaVersion: 1, title, ...(folder ? { folder } : {}), template, color, pages: [newPage(size)] };
 }
 export function effectiveStyle(document: NotebookDocument, page: NotePage) {
   return page.inheritsStyle ? { template: document.template, color: document.color } : { template: page.template, color: page.color };

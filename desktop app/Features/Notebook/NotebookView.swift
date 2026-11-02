@@ -16,6 +16,10 @@ struct NotebookView: View {
     @State private var showingPDFExporter = false
     @State private var exportDocument = PDFExportDocument()
     @State private var exportFilename = "Notebook"
+#if os(macOS)
+    @Environment(\.notebookShareClient) private var shareClient
+    @State private var showingShare = false
+#endif
     private let layout = NotebookLayout(pageGap: 32)
 
 #if os(iOS)
@@ -126,6 +130,9 @@ struct NotebookView: View {
         .navigationTitle(notebook.title.isEmpty ? "Untitled Notebook" : notebook.title)
         .navigationSubtitle("Page \(visiblePageIndex + 1) of \(pages.count)")
         .toolbar { macNotebookToolbar }
+        .sheet(isPresented: $showingShare) {
+            if let shareClient { NotebookShareSheet(notebook: notebook, client: shareClient) }
+        }
         .confirmationDialog(
             "Delete this page?",
             isPresented: $showingDeleteConfirmation,
@@ -229,6 +236,11 @@ struct NotebookView: View {
         }
         ToolbarItem(placement: .secondaryAction) {
             exportMenu
+        }
+        ToolbarItem(placement: .secondaryAction) {
+            Button("Share Link", systemImage: "link") { showingShare = true }
+                .help(shareClient == nil ? "Sign in to share this notebook" : "Create a read-only link to this notebook")
+                .disabled(shareClient == nil)
         }
     }
 
@@ -1275,3 +1287,110 @@ private extension PageTemplate {
 #Preview {
     NavigationStack { NotebookView(notebook: Notebook(title: "Preview")) }
 }
+
+#if os(macOS)
+// MARK: - Share links
+
+/// Result of the server's `/api/v1/share/<notebook>` endpoint.
+struct NotebookShareInfo: Decodable {
+    let shared: Bool
+    let url: String?
+}
+
+/// Calls the share endpoint for a notebook's cloud ID with the signed-in account.
+struct NotebookShareClient {
+    /// `method` is GET (status), POST (create or fetch the link) or DELETE (stop sharing).
+    let call: (_ cloudID: String, _ method: String) async throws -> NotebookShareInfo
+}
+
+private struct NotebookShareClientKey: EnvironmentKey {
+    static let defaultValue: NotebookShareClient? = nil
+}
+
+extension EnvironmentValues {
+    var notebookShareClient: NotebookShareClient? {
+        get { self[NotebookShareClientKey.self] }
+        set { self[NotebookShareClientKey.self] = newValue }
+    }
+}
+
+private struct NotebookShareSheet: View {
+    let notebook: Notebook
+    let client: NotebookShareClient
+    @Environment(\.dismiss) private var dismiss
+    @State private var info: NotebookShareInfo?
+    @State private var errorMessage = ""
+    @State private var busy = false
+    @State private var copied = false
+
+    private var cloudID: String { notebook.id.uuidString.lowercased() }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label("Share “\(notebook.title.isEmpty ? "Untitled Notebook" : notebook.title)”", systemImage: "link")
+                .font(.headline)
+            if let info {
+                if info.shared, let url = info.url {
+                    Text("Anyone with this link can view the notebook, including changes you sync later. They can't edit it.")
+                        .foregroundStyle(.secondary)
+                    Text(url)
+                        .textSelection(.enabled)
+                        .font(.system(.body, design: .monospaced))
+                        .padding(8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+                    HStack {
+                        Button(copied ? "Copied" : "Copy Link") { copy(url) }
+                            .keyboardShortcut(.defaultAction)
+                        if let link = URL(string: url) { Button("Open in Browser") { NSWorkspace.shared.open(link) } }
+                        Spacer()
+                        Button("Stop Sharing", role: .destructive) { update("DELETE") }.disabled(busy)
+                    }
+                } else {
+                    Text("Create a read-only link. Anyone who has it can view this notebook. You can stop sharing at any time.")
+                        .foregroundStyle(.secondary)
+                    Button("Create Share Link") { update("POST") }
+                        .keyboardShortcut(.defaultAction)
+                        .disabled(busy)
+                }
+            } else if errorMessage.isEmpty {
+                ProgressView().controlSize(.small)
+            }
+            if !errorMessage.isEmpty {
+                Text(errorMessage).foregroundStyle(.red).textSelection(.enabled)
+            }
+            HStack { Spacer(); Button("Done") { dismiss() }.keyboardShortcut(.cancelAction) }
+        }
+        .padding(20)
+        .frame(width: 440)
+        .task { await load() }
+    }
+
+    private func load() async {
+        do { info = try await client.call(cloudID, "GET") }
+        catch { errorMessage = describe(error) }
+    }
+
+    private func update(_ method: String) {
+        busy = true; errorMessage = ""; copied = false
+        Task {
+            do { info = try await client.call(cloudID, method) }
+            catch { errorMessage = describe(error) }
+            busy = false
+        }
+    }
+
+    private func copy(_ url: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(url, forType: .string)
+        copied = true
+    }
+
+    private func describe(_ error: Error) -> String {
+        if case CloudError.http(404, _) = error {
+            return "This notebook hasn't synced to your account yet. Choose Sync now from the cloud menu, then try again."
+        }
+        return error.localizedDescription
+    }
+}
+#endif

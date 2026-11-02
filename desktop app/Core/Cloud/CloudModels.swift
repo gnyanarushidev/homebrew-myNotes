@@ -8,7 +8,7 @@ struct CloudAccount: Codable, Equatable { let id: String; let email: String; let
 struct CloudConfiguration: Codable { let supabaseUrl: String; let publishableKey: String }
 struct CloudFile: Codable, Equatable { var key: String; let sha256: String; let bytes: Int; let kind: String }
 struct CloudPage: Codable { var id: String; let size: String; let template: String; let color: String; let inheritsStyle: Bool; var content: CloudFile; var image: CloudFile? }
-struct CloudManifest: Codable { var version = 1; var title: String; let template: String; let color: String; var pages: [CloudPage] }
+struct CloudManifest: Codable { var version = 1; var title: String; var folder: String? = nil; let template: String; let color: String; var pages: [CloudPage] }
 struct CloudNotebook: Codable { let id: String; let manifest: CloudManifest; let revision: Int; let change_seq: Int; let deleted: Bool; let updated_at: String; let created_at: String; let mutation_id: String }
 struct CloudDownloads: Codable { let record: CloudNotebook; let urls: [String: String] }
 struct CloudChanges: Codable { let records: [CloudNotebook]; let cursor: Int; let more: Bool }
@@ -53,7 +53,7 @@ struct SharedStroke: Codable, Equatable {
 }
 struct SharedPageContent: Codable, Equatable { var version = 1; let text: String; let strokes: [SharedStroke] }
 struct LocalCloudPage: Codable, Equatable { var id: String; let size: String; let template: String; let color: String; let inheritsStyle: Bool; let content: SharedPageContent; let image: Data?; let imageKind: String? }
-struct LocalCloudDocument: Codable, Equatable { var title: String; let template: String; let color: String; var pages: [LocalCloudPage] }
+struct LocalCloudDocument: Codable, Equatable { var title: String; var folder: String? = nil; let template: String; let color: String; var pages: [LocalCloudPage] }
 enum CloudError: LocalizedError {
     case message(String), http(Int, String), invalidDocument, invalidCallback, signedOut
     var errorDescription: String? {
@@ -103,7 +103,7 @@ enum CloudCodec {
             return LocalCloudPage(id: page.cloudPageID ?? page.id.uuidString.lowercased(), size: page.pageSize.rawValue, template: page.template.rawValue, color: page.pageColor.rawValue, inheritsStyle: page.inheritsNotebookStyle, content: content, image: png, imageKind: imageKind)
         }
         guard !pages.isEmpty, pages.count <= 300 else { throw CloudError.invalidDocument }
-        return LocalCloudDocument(title: notebook.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Untitled Notebook" : notebook.title, template: notebook.template.rawValue, color: notebook.pageColor.rawValue, pages: pages)
+        return LocalCloudDocument(title: notebook.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Untitled Notebook" : notebook.title, folder: Notebook.cleanFolder(notebook.folder), template: notebook.template.rawValue, color: notebook.pageColor.rawValue, pages: pages)
     }
     @MainActor static func apply(_ document: LocalCloudDocument, id: String, context: ModelContext, directory: URL) throws -> Notebook {
         guard let uuid = UUID(uuidString: id), !document.pages.isEmpty, document.pages.count <= 300,
@@ -120,7 +120,7 @@ enum CloudCodec {
             try MacDrawingStorage.write(strokes, name: name, directory: directory); files[page.id] = name
         }
         if notebook.modelContext == nil { context.insert(notebook) }
-        notebook.title = document.title; notebook.template = PageTemplate(rawValue: document.template) ?? .blank; notebook.pageColor = PageColor(rawValue: document.color) ?? .white
+        notebook.title = document.title; notebook.folder = Notebook.cleanFolder(document.folder); notebook.template = PageTemplate(rawValue: document.template) ?? .blank; notebook.pageColor = PageColor(rawValue: document.color) ?? .white
         let valid = Set(document.pages.map(\.id))
         for old in notebook.pages where !valid.contains(old.cloudPageID ?? old.id.uuidString.lowercased()) { context.delete(old) }
         let existingPages = try context.fetch(FetchDescriptor<Page>())

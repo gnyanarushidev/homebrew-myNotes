@@ -37,6 +37,10 @@ private struct AccountWorkspaceView: View {
     var body: some View {
         LibraryView()
         .modelContainer(engine.container)
+        .environment(\.notebookShareClient, NotebookShareClient { cloudID, method in
+            let body = method == "GET" ? nil : Data("{}".utf8)
+            return try JSONDecoder().decode(NotebookShareInfo.self, from: try await session.api("/api/v1/share/\(cloudID)", method: method, body: body))
+        })
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .disabled(session.signingOut)
         .toolbar {

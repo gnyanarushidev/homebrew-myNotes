@@ -5,6 +5,8 @@ import SwiftData
 final class Notebook {
     @Attribute(.unique) var id: UUID
     var title: String
+    /// Optional topic folder; notebooks without one are shown as unfiled.
+    var folder: String?
     var createdAt: Date
     var updatedAt: Date
     var templateRawValue: String = PageTemplate.blank.rawValue
@@ -39,6 +41,12 @@ final class Notebook {
         self.templateRawValue = template.rawValue
         self.pageColorRawValue = pageColor.rawValue
         self.pages = pages
+    }
+
+    /// Trimmed folder name, or nil when empty. Matches the cloud limit of 80 characters.
+    static func cleanFolder(_ value: String?) -> String? {
+        guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else { return nil }
+        return String(trimmed.prefix(80))
     }
 
     /// Called when scrolling past the final page. Its ink enables one more

@@ -20,7 +20,9 @@ function stroke(stroke: Stroke): Stroke {
   return { ...stroke, id: stroke.id.toLowerCase(), geometry: "polyline", points: strokePoints(stroke), rgba, color: `#${[rgba.red, rgba.green, rgba.blue].map(value => Math.round(value * 255).toString(16).padStart(2, "0")).join("")}` };
 }
 export function normalizeDocument(document: NotebookDocument): NotebookDocument {
-  return { ...document, title: document.title.trim(), pages: document.pages.map(page => ({ ...page, id: page.id.toLowerCase(), strokes: page.strokes.map(stroke) })) };
+  const { folder, ...rest } = document;
+  const cleanFolder = folder?.trim();
+  return { ...rest, ...(cleanFolder ? { folder: cleanFolder } : {}), title: document.title.trim(), pages: document.pages.map(page => ({ ...page, id: page.id.toLowerCase(), strokes: page.strokes.map(stroke) })) };
 }
 export const documentsEqual = (a: NotebookDocument, b: NotebookDocument) => equal(normalizeDocument(a), normalizeDocument(b));
 function items<T extends { id: string }>(base: T[], local: T[], remote: T[], combine: (base: T, local: T, remote: T) => T): T[] {
@@ -48,6 +50,7 @@ export function mergeDocuments(base: NotebookDocument, local: NotebookDocument, 
       strokes: items(b.strokes, l.strokes, r.strokes, () => { throw new MergeConflict(); }),
     }));
     if (!pages.length || pages.length > 300) return null;
-    return { schemaVersion: 1, title: value(b.title, l.title, r.title), template: value(b.template, l.template, r.template), color: value(b.color, l.color, r.color), pages };
+    const folder = value(b.folder, l.folder, r.folder);
+    return { schemaVersion: 1, title: value(b.title, l.title, r.title), ...(folder ? { folder } : {}), template: value(b.template, l.template, r.template), color: value(b.color, l.color, r.color), pages };
   } catch (error) { if (error instanceof MergeConflict) return null; throw error; }
 }

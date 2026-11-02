@@ -21,7 +21,7 @@ export async function loadCloudNotebook(id: string, accountId?: string): Promise
     const image = page.image ? { mimeType: page.image.kind as "image/png" | "image/jpeg", data: base64(await read(page.image, urls[page.image.key])) } : undefined;
     pages.push({ id: page.id, size: page.size, template: page.template, color: page.color, inheritsStyle: page.inheritsStyle, strokes: content.strokes, text: content.text, ...(image ? { image } : {}) });
   }
-  return { id, revision: record.revision, mutation_id: record.mutation_id, created_at: record.created_at, updated_at: record.updated_at, storage: record.manifest, document: { schemaVersion: 1, title: record.manifest.title, template: record.manifest.template, color: record.manifest.color, pages } };
+  return { id, revision: record.revision, mutation_id: record.mutation_id, created_at: record.created_at, updated_at: record.updated_at, storage: record.manifest, document: { schemaVersion: 1, title: record.manifest.title, ...(record.manifest.folder ? { folder: record.manifest.folder } : {}), template: record.manifest.template, color: record.manifest.color, pages } };
 }
 export async function saveCloudNotebook(id: string, document: NotebookDocument, revision: number, operationId: string, baseline?: CloudManifest, accountId?: string): Promise<NotebookRecord> {
   const cloudApi = <T>(path: string, options: RequestInit = {}) => api<T>(path, { ...options, headers: { ...options.headers, ...(accountId ? { "X-MyNotes-Account": accountId } : {}) } });
@@ -37,7 +37,7 @@ export async function saveCloudNotebook(id: string, document: NotebookDocument, 
     return finalized.files[0];
   }
   async function attempt(base?: CloudManifest) {
-    const manifest: CloudManifest = { version: 1, title: document.title, template: document.template, color: document.color, pages: [] };
+    const manifest: CloudManifest = { version: 1, title: document.title, ...(document.folder ? { folder: document.folder } : {}), template: document.template, color: document.color, pages: [] };
     for (const page of document.pages) {
       const previous = base?.pages.find(item => item.id === page.id);
       const content = await upload(new TextEncoder().encode(JSON.stringify({ version: 1, strokes: page.strokes, text: page.text })), "page", previous?.content);

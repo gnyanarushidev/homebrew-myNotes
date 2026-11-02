@@ -84,13 +84,13 @@ export async function assemble(owner: string, record: CloudRecord): Promise<Note
     const image = page.image ? { mimeType: page.image.kind as "image/png" | "image/jpeg", data: (await fileData(owner, page.image)).toString("base64") } : undefined;
     return { id: page.id, size: page.size, template: page.template, color: page.color, inheritsStyle: page.inheritsStyle, strokes: content.strokes, text: content.text, ...(image ? { image } : {}) };
   });
-  const { title, template, color } = record.manifest;
-  return { id: record.id, document: { schemaVersion: 1, title, template, color, pages }, revision: record.revision, mutation_id: record.mutation_id, created_at: record.created_at, updated_at: record.updated_at };
+  const { title, folder, template, color } = record.manifest;
+  return { id: record.id, document: { schemaVersion: 1, title, ...(folder ? { folder } : {}), template, color, pages }, revision: record.revision, mutation_id: record.mutation_id, created_at: record.created_at, updated_at: record.updated_at };
 }
 export async function storeDocument(owner: string, id: string, document: NotebookDocument, operationId: string, revision: number, keepBoth = false) {
   // Legacy/small-client compatibility. New clients transfer pages directly to B2.
   const parsed = documentSchema.parse(document);
-  const manifest: CloudManifest = { version: 1, title: parsed.title, template: parsed.template, color: parsed.color, pages: [] };
+  const manifest: CloudManifest = { version: 1, title: parsed.title, ...(parsed.folder ? { folder: parsed.folder } : {}), template: parsed.template, color: parsed.color, pages: [] };
   manifest.pages = await boundedMap(parsed.pages, async page => {
     const content = await storeFile(owner, Buffer.from(JSON.stringify({ version: 1, strokes: page.strokes, text: page.text })), "page");
     const image = page.image ? await storeFile(owner, Buffer.from(page.image.data, "base64"), page.image.mimeType) : undefined;

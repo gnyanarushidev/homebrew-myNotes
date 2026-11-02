@@ -17,6 +17,10 @@ The Mac app now includes account sign-in, Keychain sessions, account-local noteb
 
 The agreed personal-app goal, implementation plan, architecture and activation steps are consolidated in **[`PROJECT_PLAN.md`](PROJECT_PLAN.md)**. Apply the new `002_cloud_storage.sql` migration and deploy the server before using desktop sign-in/sync. The current Homebrew release may predate this source update; build the current Mac sources to use the account workflow.
 
+**Share links:** open a notebook's menu on the web (**Share link**) or click **Share Link** in the Mac toolbar to create a read-only link that anyone can open without an account. The link shows the notebook at `/share/<token>` and always reflects the latest synced version. **Stop sharing** (web or Mac) disables it immediately, and deleting the notebook also ends it. Apply `web-app/supabase/migrations/003_share_links.sql` in the Supabase SQL Editor before using it; the notebook must have synced to your account first.
+
+**Folders:** group notebooks by topic. On the web, set a folder when creating a notebook or use the folder button on a notebook row. On the Mac, right-click a notebook and choose **Move to Folder**. The folder is stored in the notebook's cloud metadata, so it syncs between both apps and needs no database migration. Older Mac builds ignore folders and clear them if they re-save the notebook.
+
 On the Mac, **Import existing local notebooks** copies your original local data into the signed-in account and synchronizes it. Manual export/import remains available as a portable transfer option.
 
 ## Run the web application
